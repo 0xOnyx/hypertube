@@ -1,0 +1,151 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:development}
+  cloud:
+    gateway:
+      default-filters:
+        - name: JwtAuthenticationFilter
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        - id: auth-service
+          uri: ${services.auth-service.url:http://auth-service:8081}
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+            
+        - id: user-service
+          uri: ${services.user-service.url:http://user-service:8082}
+          predicates:
+            - Path=/users/**
+          filters:
+            - StripPrefix=1
+            
+        - id: video-service
+          uri: ${services.video-service.url:http://video-service:3002}
+          predicates:
+            - Path=/movies/**
+          filters:
+            - StripPrefix=1
+
+  security:
+    user:
+      name: admin
+      password: ${GATEWAY_ADMIN_PASSWORD:admin123}
+
+# Configuration des services
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  user-service:
+    url: ${USER_SERVICE_URL:http://user-service:8082}
+  video-service:
+    url: ${VIDEO_SERVICE_URL:http://localhost:3002}
+
+# Configuration JWT
+jwt:
+  secret: ${JWT_SECRET:hypertubeSecretKey}
+
+# Configuration Hypertube JWT
+hypertube:
+  app:
+    jwtSecret: ${JWT_SECRET:hypertubeSecretKey}
+    jwtExpirationMs: 86400000
+    jwtRefreshExpirationMs: 120000000
+
+# Configuration Redis (pour le cache)
+redis:
+  host: ${REDIS_HOST:redis}
+  port: ${REDIS_PORT:6379}
+  timeout: 2000ms
+
+# Configuration Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    com.hypertube.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Configuration spécifique par profil
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/auth/**
+        - id: user-service
+          uri: http://user-service:8082
+          predicates:
+            - Path=/users/**
+        - id: video-service
+          uri: http://video-service:3002
+          predicates:
+            - Path=/movies/**
+
+hypertube:
+  services:
+    auth-service:
+      url: http://auth-service:8081
+    video-service:
+      url: http://video-service:3002
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka
+
+---
+spring:
+  config:
+    activate:
+      on-profile: kubernetes
+
+hypertube:
+  services:
+    auth-service:
+      url: http://auth-service:8081
+    video-service:
+      url: http://video-service:3002
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false 

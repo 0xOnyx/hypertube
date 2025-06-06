@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-service
+  namespace: hypertube
+  labels:
+    app: video-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-service
+  template:
+    metadata:
+      labels:
+        app: video-service
+    spec:
+      containers:
+      - name: video-service
+        image: hypertube/video-service:latest
+        ports:
+        - containerPort: 3002
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: hypertube-config
+              key: NODE_ENV
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: hypertube-config
+              key: REDIS_URL
+        - name: POSTGRES_URL
+          valueFrom:
+            configMapKeyRef:
+              name: hypertube-config
+              key: POSTGRES_URL
+        - name: STORAGE_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: hypertube-config
+              key: STORAGE_PATH
+        - name: CLEANUP_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: hypertube-config
+              key: CLEANUP_INTERVAL
+        - name: MAX_STORAGE_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: hypertube-config
+              key: MAX_STORAGE_SIZE
+        volumeMounts:
+        - name: video-storage
+          mountPath: /app/storage
+        - name: torrents-storage
+          mountPath: /app/torrents
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: video-storage
+        persistentVolumeClaim:
+          claimName: video-pvc
+      - name: torrents-storage
+        persistentVolumeClaim:
+          claimName: torrents-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-service
+  namespace: hypertube
+  labels:
+    app: video-service
+spec:
+  ports:
+  - port: 3002
+    targetPort: 3002
+  selector:
+    app: video-service
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: video-pvc
+  namespace: hypertube
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: torrents-pvc
+  namespace: hypertube
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi 

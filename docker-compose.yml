@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: hypertube-postgres
+    environment:
+      POSTGRES_DB: hypertube
+      POSTGRES_USER: hypertube_user
+      POSTGRES_PASSWORD: hypertube_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - hypertube-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hypertube_user -d hypertube"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cache Redis
+  redis:
+    image: redis:7-alpine
+    container_name: hypertube-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - hypertube-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Service d'authentification Spring Boot
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: hypertube-auth-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hypertube
+      SPRING_DATASOURCE_USERNAME: hypertube_user
+      SPRING_DATASOURCE_PASSWORD: hypertube_password
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hypertube-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service vidéo Node.js (spécialisé WebTorrent/FFmpeg)
+  video-service:
+    build:
+      context: ./backend/video-service
+      dockerfile: Dockerfile
+    container_name: hypertube-video-service
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL: postgresql://hypertube_user:hypertube_password@postgres:5432/hypertube
+      STORAGE_PATH: /app/storage
+      CLEANUP_INTERVAL: 24
+      MAX_STORAGE_SIZE: 50
+    ports:
+      - "3002:3002"
+    volumes:
+      - video_storage:/app/storage
+      - torrents_data:/app/torrents
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hypertube-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway Spring Cloud Gateway
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: hypertube-api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      AUTH_SERVICE_URL: http://auth-service:8081
+      VIDEO_SERVICE_URL: http://video-service:3002
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      video-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hypertube-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Angular
+  frontend:
+    build:
+      context: ./frontend/hypertube-app
+      dockerfile: Dockerfile
+    container_name: hypertube-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - hypertube-network
+    environment:
+      API_BASE_URL: http://localhost:8080
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  video_storage:
+    driver: local
+  torrents_data:
+    driver: local
+
+networks:
+  hypertube-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

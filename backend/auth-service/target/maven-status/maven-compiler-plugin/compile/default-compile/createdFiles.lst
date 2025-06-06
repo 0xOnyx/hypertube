@@ -1,0 +1,3 @@
+com\hypertube\auth\AuthServiceApplication.class
+com\hypertube\auth\dto\TokenRefreshResponse.class
+com\hypertube\auth\dto\SignupRequest.class

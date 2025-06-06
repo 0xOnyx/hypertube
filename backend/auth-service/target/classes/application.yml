@@ -1,0 +1,160 @@
+spring:
+  application:
+    name: auth-service
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:development}
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/hypertube}
+    username: ${SPRING_DATASOURCE_USERNAME:hypertube_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:hypertube_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 60000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - user:email
+              - read:user
+          fortytwo:
+            client-id: ${FORTYTWO_CLIENT_ID}
+            client-secret: ${FORTYTWO_CLIENT_SECRET}
+            client-name: 42
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - public
+        provider:
+          fortytwo:
+            authorization-uri: https://api.intra.42.fr/oauth/authorize
+            token-uri: https://api.intra.42.fr/oauth/token
+            user-info-uri: https://api.intra.42.fr/v2/me
+            user-name-attribute: login
+
+server:
+  port: ${SERVER_PORT:8081}
+  servlet:
+    context-path: /
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    register-with-eureka: ${EUREKA_REGISTER:true}
+    fetch-registry: ${EUREKA_FETCH:true}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+
+hypertube:
+  app:
+    jwtSecret: ${JWT_SECRET:hypertubeSecretKey}
+    jwtExpirationMs: ${JWT_EXPIRATION:86400000} # 24 hours
+    jwtRefreshExpirationMs: ${JWT_REFRESH_EXPIRATION:2592000000} # 30 days
+    
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:4200}
+    
+  email:
+    verification:
+      enabled: ${EMAIL_VERIFICATION_ENABLED:true}
+    from: ${EMAIL_FROM:noreply@hypertube.com}
+
+logging:
+  level:
+    com.hypertube.auth: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+      
+  datasource:
+    url: jdbc:postgresql://postgres:5432/hypertube
+    username: hypertube_user
+    password: hypertube_password
+
+  redis:
+    host: redis
+    port: 6379
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka
+
+---
+spring:
+  config:
+    activate:
+      on-profile: kubernetes
+      
+  datasource:
+    url: jdbc:postgresql://postgres:5432/hypertube
+    username: hypertube_user
+    password: hypertube_password
+
+  redis:
+    host: redis
+    port: 6379
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false 
