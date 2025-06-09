@@ -5,6 +5,17 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:development}
 
+  # Configuration Spring Cloud
+  cloud:
+    loadbalancer:
+      enabled: false  # Désactive le LoadBalancer si pas nécessaire
+    discovery:
+      enabled: true
+    
+  # Configuration pour éviter les problèmes de beans
+  main:
+    allow-circular-references: true
+    
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/hypertube}
     username: ${SPRING_DATASOURCE_USERNAME:hypertube_user}
@@ -34,46 +45,49 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: true
-            required: true
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+            required: ${MAIL_SMTP_STARTTLS_REQUIRED:false}
+    # Configuration pour éviter les erreurs si pas de config mail
+    default-encoding: UTF-8
+    test-connection: ${MAIL_TEST_CONNECTION:false}
 
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope:
-              - email
-              - profile
-          github:
-            client-id: ${GITHUB_CLIENT_ID}
-            client-secret: ${GITHUB_CLIENT_SECRET}
-            scope:
-              - user:email
-              - read:user
-          fortytwo:
-            client-id: ${FORTYTWO_CLIENT_ID}
-            client-secret: ${FORTYTWO_CLIENT_SECRET}
-            client-name: 42
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - public
-        provider:
-          fortytwo:
-            authorization-uri: https://api.intra.42.fr/oauth/authorize
-            token-uri: https://api.intra.42.fr/oauth/token
-            user-info-uri: https://api.intra.42.fr/v2/me
-            user-name-attribute: login
+  # security:
+  #   oauth2:
+  #     client:
+  #       registration:
+  #         google:
+  #           client-id: ${GOOGLE_CLIENT_ID:}
+  #           client-secret: ${GOOGLE_CLIENT_SECRET:}
+  #           scope:
+  #             - email
+  #             - profile
+  #         github:
+  #           client-id: ${GITHUB_CLIENT_ID:}
+  #           client-secret: ${GITHUB_CLIENT_SECRET:}
+  #           scope:
+  #             - user:email
+  #             - read:user
+  #         fortytwo:
+  #           client-id: ${FORTYTWO_CLIENT_ID:}
+  #           client-secret: ${FORTYTWO_CLIENT_SECRET:}
+  #           client-name: 42
+  #           authorization-grant-type: authorization_code
+  #           redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+  #           scope:
+  #             - public
+  #       provider:
+  #         fortytwo:
+  #           authorization-uri: https://api.intra.42.fr/oauth/authorize
+  #           token-uri: https://api.intra.42.fr/oauth/token
+  #           user-info-uri: https://api.intra.42.fr/v2/me
+  #           user-name-attribute: login
 
 server:
   port: ${SERVER_PORT:8081}
@@ -95,18 +109,28 @@ eureka:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
     register-with-eureka: ${EUREKA_REGISTER:true}
     fetch-registry: ${EUREKA_FETCH:true}
+    # Configuration pour éviter les problèmes de démarrage
+    initial-instance-info-replication-interval-seconds: 5
+    instance-info-replication-interval-seconds: 10
+    health-check-grace-period-seconds: 30
   instance:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    # Amélioration de la configuration d'instance
+    instance-id: ${spring.application.name}:${spring.application.instance-id:${random.value}}
 
 hypertube:
   app:
-    jwtSecret: ${JWT_SECRET:hypertubeSecretKey}
+    jwtSecret: ${JWT_SECRET:dev-jwt-secret-key-hypertube-development-environment-secure-256-bits}
     jwtExpirationMs: ${JWT_EXPIRATION:86400000} # 24 hours
     jwtRefreshExpirationMs: ${JWT_REFRESH_EXPIRATION:2592000000} # 30 days
     
   frontend:
     url: ${FRONTEND_URL:http://localhost:4200}
+    
+  auth:
+    baseUrl: ${AUTH_BASE_URL:https://hypertube.com:8443/api/auth}
     
   email:
     verification:
@@ -118,12 +142,19 @@ logging:
     com.hypertube.auth: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
+    # Réduction du niveau de log pour les warnings LoadBalancer
+    org.springframework.context.support.PostProcessorRegistrationDelegate: WARN
+    org.springframework.cloud.loadbalancer: WARN
 
 ---
 spring:
   config:
     activate:
       on-profile: docker
+      
+  cloud:
+    loadbalancer:
+      enabled: false
       
   datasource:
     url: jdbc:postgresql://postgres:5432/hypertube
@@ -144,6 +175,10 @@ spring:
   config:
     activate:
       on-profile: kubernetes
+      
+  cloud:
+    loadbalancer:
+      enabled: false
       
   datasource:
     url: jdbc:postgresql://postgres:5432/hypertube

@@ -1,6 +1,8 @@
 package com.hypertube.gateway.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -9,83 +11,137 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-
+/**
+ * Configuration simplifiée et propre de la Gateway API
+ * Toute la logique complexe est déléguée au RouteConfigHelper
+ */
 @Configuration
 public class GatewayConfig {
 
-    @Value("${hypertube.services.auth-service.url:http://auth-service:8081}")
-    private String authServiceUrl;
+    private static final Logger log = LoggerFactory.getLogger(GatewayConfig.class);
 
-    @Value("${hypertube.services.video-service.url:http://video-service:3002}")
-    private String videoServiceUrl;
+    private final HypertubeGatewayProperties gatewayProperties;
+    private final RouteConfigHelper routeHelper;
+
+    @Autowired
+    public GatewayConfig(HypertubeGatewayProperties gatewayProperties, RouteConfigHelper routeHelper) {
+        this.gatewayProperties = gatewayProperties;
+        this.routeHelper = routeHelper;
+    }
 
     @Bean
     public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
+        log.info("Configuration des routes de la Gateway API");
+        
         return builder.routes()
-                // Auth Service Routes
-                .route("auth-signin", r -> r.path("/api/auth/signin")
-                        .uri(authServiceUrl))
-                .route("auth-signup", r -> r.path("/api/auth/signup")
-                        .uri(authServiceUrl))
-                .route("auth-refresh", r -> r.path("/api/auth/refreshtoken")
-                        .uri(authServiceUrl))
-                .route("auth-signout", r -> r.path("/api/auth/signout")
-                        .uri(authServiceUrl))
-                .route("auth-verify-email", r -> r.path("/api/auth/verify-email")
-                        .uri(authServiceUrl))
-                .route("auth-forgot-password", r -> r.path("/api/auth/forgot-password")
-                        .uri(authServiceUrl))
-                .route("auth-reset-password", r -> r.path("/api/auth/reset-password")
-                        .uri(authServiceUrl))
-                .route("auth-validate", r -> r.path("/api/auth/validate")
-                        .uri(authServiceUrl))
-                .route("oauth2", r -> r.path("/oauth2/**")
-                        .uri(authServiceUrl))
-                .route("login-oauth2", r -> r.path("/login/oauth2/**")
-                        .uri(authServiceUrl))
+                // === Authentification publique ===
+                .route("auth-public", r -> r
+                        .path("/auth/signin", "/auth/signup")
+                        .filters(routeHelper.publicRoute("AUTH-PUBLIC"))
+                        .uri(routeHelper.getAuthServiceUrl()))
+                        
+                // === OAuth2 providers endpoint (public) ===
+                .route("oauth2-providers", r -> r
+                        .path("/auth/oauth2/providers")
+                        .filters(routeHelper.publicRoute("OAUTH2-PROVIDERS"))
+                        .uri(routeHelper.getAuthServiceUrl()))
+                        
+                .route("oauth2", r -> r
+                        .path("/oauth2/**", "/login/oauth2/**")
+                        .filters(routeHelper.publicRoute("OAUTH2"))
+                        .uri(routeHelper.getAuthServiceUrl()))
+                        
+                // === Authentification protégée ===
+                .route("auth-protected", r -> r
+                        .predicate(exchange -> {
+                                String path = exchange.getRequest().getURI().getPath();
+                                return path.startsWith("/auth/")
+                                && !path.equals("/auth/signin")
+                                && !path.equals("/auth/signup")
+                                && !path.equals("/auth/oauth2/providers");
+                        })
+                        .filters(routeHelper.protectedRoute("AUTH", "auth"))
+                        .uri(routeHelper.getAuthServiceUrl()))
 
-                // User Routes (Auth Service)
-                .route("users", r -> r.path("/api/users", "/api/users/**")
-                        .uri(authServiceUrl))
+                .route("users", r -> r
+                        .path("/users/**")
+                        .filters(routeHelper.protectedRoute("USERS", "auth"))
+                        .uri(routeHelper.getAuthServiceUrl()))
 
-                // Video Service Routes
-                .route("movies-search", r -> r.path("/api/movies/search")
-                        .uri(videoServiceUrl))
-                .route("movies", r -> r.path("/api/movies", "/api/movies/**")
-                        .uri(videoServiceUrl))
-                .route("stream", r -> r.path("/api/stream/**")
-                        .uri(videoServiceUrl))
-                .route("download", r -> r.path("/api/download/**")
-                        .uri(videoServiceUrl))
-                .route("subtitles", r -> r.path("/api/subtitles/**")
-                        .uri(videoServiceUrl))
+                // === Films ===
+                .route("movies-public", r -> r
+                        .path("/movies")
+                        .and().method("GET")
+                        .filters(routeHelper.publicRoute("MOVIES-PUBLIC"))
+                        .uri(routeHelper.getVideoServiceUrl()))
 
-                // Comments Routes (Video Service)
-                .route("comments", r -> r.path("/api/comments", "/api/comments/**")
-                        .uri(videoServiceUrl))
+                .route("movies-protected", r -> r
+                        .path("/movies/**")
+                        .filters(routeHelper.protectedRoute("MOVIES", "video"))
+                        .uri(routeHelper.getVideoServiceUrl()))
 
-                // Health checks
-                .route("auth-health", r -> r.path("/health/auth")
-                        .uri(authServiceUrl + "/actuator/health"))
-                .route("video-health", r -> r.path("/health/video")
-                        .uri(videoServiceUrl + "/health"))
+                // === Services vidéo protégés ===
+                .route("stream", r -> r
+                        .path("/stream/**")
+                        .filters(routeHelper.protectedRoute("STREAM", "video"))
+                        .uri(routeHelper.getVideoServiceUrl()))
+
+                .route("subtitles", r -> r
+                        .path("/subtitles/**")
+                        .filters(routeHelper.protectedRoute("SUBTITLES", "video"))
+                        .uri(routeHelper.getVideoServiceUrl()))
+
+                .route("comments", r -> r
+                        .path("/comments/**")
+                        .filters(routeHelper.protectedRoute("COMMENTS", "video"))
+                        .uri(routeHelper.getVideoServiceUrl()))
+
+                // === Santé des services ===
+                .route("health-auth", r -> r
+                        .path("/health/auth")
+                        .filters(routeHelper.healthRoute("HEALTH-AUTH"))
+                        .uri(routeHelper.getAuthServiceUrl() + routeHelper.getAuthHealthPath()))
+                        
+                .route("health-video", r -> r
+                        .path("/health/video")
+                        .filters(routeHelper.healthRoute("HEALTH-VIDEO"))
+                        .uri(routeHelper.getVideoServiceUrl() + routeHelper.getVideoHealthPath()))
 
                 .build();
     }
 
     @Bean
     public CorsWebFilter corsWebFilter() {
-        CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowedOriginPatterns(Arrays.asList("*"));
-        corsConfig.setMaxAge(3600L);
-        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        corsConfig.setAllowedHeaders(Arrays.asList("*"));
-        corsConfig.setAllowCredentials(true);
+        log.info("Configuration CORS pour la Gateway API");
+        
+        var corsConfig = new CorsConfiguration();
+        var corsProps = gatewayProperties.getCors();
+        
+        corsConfig.setAllowedOriginPatterns(corsProps.getAllowedOriginPatterns());
+        corsConfig.setAllowedMethods(corsProps.getAllowedMethods());
+        corsConfig.setAllowedHeaders(corsProps.getAllowedHeaders());
+        corsConfig.setExposedHeaders(corsProps.getExposedHeaders());
+        corsConfig.setAllowCredentials(corsProps.isAllowCredentials());
+        corsConfig.setMaxAge(corsProps.getMaxAge());
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
 
         return new CorsWebFilter(source);
+    }
+
+    @Bean
+    public org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter redisRateLimiter() {
+        var defaultConfig = gatewayProperties.getRateLimit().getConfigForEndpoint("default");
+        return new org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter(
+                defaultConfig.getReplenishRate(), 
+                defaultConfig.getBurstCapacity(),
+                defaultConfig.getRequestedTokens()
+        );
+    }
+
+    @Bean
+    public org.springframework.cloud.gateway.filter.ratelimit.KeyResolver keyResolver() {
+        return exchange -> reactor.core.publisher.Mono.just("global");
     }
 } 

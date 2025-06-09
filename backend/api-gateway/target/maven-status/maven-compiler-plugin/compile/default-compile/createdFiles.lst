@@ -1,0 +1,13 @@
+com/hypertube/gateway/config/HypertubeGatewayProperties$RateLimitConfig.class
+com/hypertube/gateway/filter/RequestHeaderGatewayFilterFactory$Config.class
+com/hypertube/gateway/config/HypertubeGatewayProperties$RateLimitEndpointConfig.class
+com/hypertube/gateway/config/HypertubeGatewayProperties$RetryConfig.class
+com/hypertube/gateway/config/HypertubeGatewayProperties$CorsConfig.class
+com/hypertube/gateway/config/HypertubeGatewayProperties$ServiceConfig.class
+com/hypertube/gateway/config/HypertubeGatewayProperties$JwtConfig.class
+com/hypertube/gateway/config/HypertubeGatewayProperties$ServicesConfig.class
+com/hypertube/gateway/controller/FallbackController.class
+com/hypertube/gateway/config/HypertubeGatewayProperties.class
+com/hypertube/gateway/config/HypertubeGatewayProperties$CircuitBreakerConfig.class
+com/hypertube/gateway/filter/RequestHeaderGatewayFilterFactory.class
+com/hypertube/gateway/config/ProductionConfig.class

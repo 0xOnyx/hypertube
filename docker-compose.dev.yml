@@ -1,0 +1,222 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: hypertube-postgres-dev
+    environment:
+      POSTGRES_DB: hypertube
+      POSTGRES_USER: hypertube_user
+      POSTGRES_PASSWORD: hypertube_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./backend/auth-service/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hypertube_user -d hypertube"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: hypertube-redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Eureka Service Discovery
+  eureka-server:
+    image: openjdk:21-jdk-slim
+    container_name: hypertube-eureka-dev
+    ports:
+      - "8761:8761"
+    volumes:
+      - ./backend/eureka-server:/app
+      - maven_cache_dev:/root/.m2
+    working_dir: /app
+    command: >
+      bash -c "
+        ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=development'
+      "
+    environment:
+      - SPRING_PROFILES_ACTIVE=development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Auth Service (Spring Boot avec devtools)
+  auth-service:
+    image: openjdk:21-jdk-slim
+    container_name: hypertube-auth-dev
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./backend/auth-service:/app
+      - maven_cache_dev:/root/.m2
+    working_dir: /app
+    command: >
+      bash -c "
+        ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments='
+          -Dspring.profiles.active=docker
+          -Dspring.devtools.restart.enabled=true
+          -Dspring.devtools.livereload.enabled=true
+          -Dspring.devtools.restart.additional-paths=src/main/java,src/main/resources
+        '
+      "
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hypertube
+      - SPRING_DATASOURCE_USERNAME=hypertube_user
+      - SPRING_DATASOURCE_PASSWORD=hypertube_password
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - FRONTEND_URL=http://localhost:4200
+      - AUTH_BASE_URL=https://hypertube.com:8443/api/auth
+      - JWT_SECRET=dev-jwt-secret-key-hypertube-development-environment-secure-256-bits
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Video Service (NestJS avec nodemon)
+  video-service:
+    image: node:20-alpine
+    container_name: hypertube-video-dev
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./backend/video-service:/app
+      - /app/node_modules  # Anonymous volume for node_modules
+      - ./videos:/app/videos
+      - ./logs:/app/logs
+    working_dir: /app
+    command: >
+      sh -c "
+        npm install &&
+        npm run start:dev
+      "
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=hypertube_user
+      - POSTGRES_PASSWORD=hypertube_password
+      - POSTGRES_DB=hypertube
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # API Gateway (Spring Boot)
+  api-gateway:
+    image: openjdk:21-jdk-slim
+    container_name: hypertube-gateway-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/api-gateway:/app
+      - maven_cache_dev:/root/.m2
+    working_dir: /app
+    command: >
+      bash -c "
+        ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments='
+          -Dspring.profiles.active=docker
+          -Dspring.devtools.restart.enabled=true
+        '
+      "
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
+      - JWT_SECRET=dev-jwt-secret-key-hypertube-development-environment-secure-256-bits
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      video-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Frontend Angular (avec hot reload)
+  frontend:
+    image: node:20-alpine
+    container_name: hypertube-frontend-dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Anonymous volume for node_modules
+    working_dir: /app
+    command: >
+      sh -c "
+        npm install &&
+        ng serve --host 0.0.0.0 --port 4200 --disable-host-check --poll 1000
+      "
+    environment:
+      - NODE_ENV=development
+      - NG_CLI_ANALYTICS=false
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4200"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Nginx Reverse Proxy pour HTTPS
+  nginx:
+    image: nginx:alpine
+    container_name: hypertube-nginx-dev
+    ports:
+      - "8443:8443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - api-gateway
+    command: >
+      sh -c "
+        nginx -g 'daemon off;'
+      "
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  maven_cache_dev: 

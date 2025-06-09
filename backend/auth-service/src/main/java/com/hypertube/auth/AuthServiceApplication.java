@@ -5,7 +5,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+    org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration.class,
+    org.springframework.cloud.loadbalancer.config.LoadBalancerAutoConfiguration.class,
+    org.springframework.cloud.loadbalancer.config.BlockingLoadBalancerClientAutoConfiguration.class
+})
 @EnableJpaAuditing
 @EnableCaching
 public class AuthServiceApplication {

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired
+    @Autowired(required = false)
     private JavaMailSender emailSender;
 
     @Value("${hypertube.email.from}")
@@ -19,7 +19,29 @@ public class EmailService {
     @Value("${hypertube.frontend.url}")
     private String frontendUrl;
 
+    @Value("${hypertube.email.verification.enabled:false}")
+    private boolean emailVerificationEnabled;
+
+    @Value("${MAIL_USERNAME:}")
+    private String mailUsername;
+
+    @Value("${MAIL_PASSWORD:}")
+    private String mailPassword;
+
+    public boolean isMailConfigured() {
+        return emailVerificationEnabled && 
+               emailSender != null && 
+               mailUsername != null && !mailUsername.trim().isEmpty() && 
+               mailPassword != null && !mailPassword.trim().isEmpty();
+    }
+
     public void sendVerificationEmail(User user) {
+        if (!isMailConfigured()) {
+            System.out.println("⚠️ Email non configuré - Email de vérification ignoré pour: " + user.getEmail());
+            return;
+        }
+
+        try {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(user.getEmail());
@@ -41,9 +63,19 @@ public class EmailService {
         
         message.setText(text);
         emailSender.send(message);
+            System.out.println("✅ Email de vérification envoyé à: " + user.getEmail());
+        } catch (Exception e) {
+            System.err.println("❌ Erreur lors de l'envoi de l'email de vérification: " + e.getMessage());
+        }
     }
 
     public void sendPasswordResetEmail(User user, String resetToken) {
+        if (!isMailConfigured()) {
+            System.out.println("⚠️ Email non configuré - Email de reset ignoré pour: " + user.getEmail());
+            return;
+        }
+
+        try {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(user.getEmail());
@@ -65,5 +97,9 @@ public class EmailService {
         
         message.setText(text);
         emailSender.send(message);
+            System.out.println("✅ Email de reset envoyé à: " + user.getEmail());
+        } catch (Exception e) {
+            System.err.println("❌ Erreur lors de l'envoi de l'email de reset: " + e.getMessage());
+        }
     }
 } 

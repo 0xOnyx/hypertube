@@ -1,150 +1,204 @@
-# Frontend - Hypertube
+# Frontend Hypertube - Angular 20
 
-Ce dossier contient toutes les applications frontend de Hypertube.
+Application frontend moderne pour Hypertube, construite avec Angular 20 et les dernières bonnes pratiques.
 
-## 🏗️ Applications
+## 🚀 Fonctionnalités
 
-- **hypertube-app/** - Application principale Angular avec Tailwind CSS
+- **Architecture moderne** : Standalone components, Signals, Control Flow
+- **Authentification** : JWT avec interceptors automatiques
+- **Interface utilisateur** : Angular Material avec design responsive
+- **Routing** : Lazy loading et guards d'authentification
+- **Services** : Injection de dépendances moderne avec `inject()`
+- **Formulaires** : Reactive Forms avec validation
+- **HTTP** : Client HTTP avec interceptors
 
-## 🚀 Démarrage rapide
+## 📋 Prérequis
 
-### Prérequis
-- Node.js 18+
-- npm ou yarn
-- Angular CLI 18+
+- Node.js 20+ (recommandé)
+- npm 8+
+- Angular CLI 20+
 
-### Installation et démarrage
+## 🛠️ Installation
+
+### Développement local
 
 ```bash
-cd hypertube-app
+# Installer les dépendances
 npm install
-ng serve
+
+# Démarrer le serveur de développement
+npm start
+
+# L'application sera disponible sur http://localhost:4200
 ```
 
-L'application sera accessible sur http://localhost:4200
+### Avec Docker
 
-## 🎨 Technologies
+```bash
+# Construire l'image Docker
+docker build -t hypertube-frontend .
 
-- **Angular 18** - Framework frontend
-- **Tailwind CSS** - Framework CSS utilitaire
-- **TypeScript** - Langage de programmation
-- **RxJS** - Programmation réactive
+# Lancer le conteneur
+docker run -p 4200:80 hypertube-frontend
+```
 
-## 🎭 Design System
+### Avec Docker Compose (recommandé)
 
-L'interface suit le design "Animax" avec :
-- **Palette de couleurs** : #181111, #382929, #b89d9f
-- **Police principale** : Spline Sans
-- **Police secondaire** : Noto Sans
-- **Thème sombre** par défaut
+```bash
+# Depuis la racine du projet
+docker compose up -d frontend
+```
 
-## 📱 Pages et fonctionnalités
+## 🏗️ Architecture
 
-- **Accueil** - Hero section, films populaires et nouveautés
-- **Recherche** - Recherche avancée avec filtres (genre, année, note...)
-- **Profil** - Gestion du compte, watchlist, historique
-- **Connexion** - Authentification utilisateur
+```
+src/
+├── app/
+│   ├── core/                 # Services, guards, interceptors
+│   │   ├── guards/          # Guards d'authentification
+│   │   ├── interceptors/    # Interceptors HTTP
+│   │   ├── models/          # Interfaces TypeScript
+│   │   └── services/        # Services métier
+│   ├── features/            # Modules fonctionnels
+│   │   ├── auth/           # Authentification
+│   │   ├── dashboard/      # Tableau de bord
+│   │   └── movies/         # Gestion des films
+│   ├── shared/             # Composants partagés
+│   ├── app.config.ts       # Configuration Angular
+│   ├── app.routes.ts       # Routes principales
+│   └── app.ts             # Composant racine
+└── main.ts                 # Point d'entrée
+```
 
 ## 🔧 Configuration
 
 ### Variables d'environnement
 
-Créer un fichier `src/environments/environment.ts` :
+L'application utilise les URLs suivantes par défaut :
 
-```typescript
-export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:8080/api'
-};
-```
+- **API Backend** : `http://localhost:8080/api`
+- **Frontend** : `http://localhost:4200`
 
-### Proxy de développement
+### Modification des URLs
 
-Pour éviter les problèmes CORS en développement, créer `proxy.conf.json` :
+Pour changer l'URL de l'API, modifiez les services dans `src/app/core/services/`.
 
-```json
-{
-  "/api/*": {
-    "target": "http://localhost:8080",
-    "secure": true,
-    "changeOrigin": true
-  }
-}
-```
+## 📱 Fonctionnalités principales
 
-Puis démarrer avec :
-```bash
-ng serve --proxy-config proxy.conf.json
-```
+### Authentification
+- Connexion avec username/password
+- Inscription avec validation
+- Gestion automatique du token JWT
+- Déconnexion sécurisée
 
-## 🏗️ Build et déploiement
+### Films
+- Liste des films populaires
+- Recherche en temps réel
+- Détails des films avec player vidéo
+- Système de commentaires
+- Pagination
 
-### Build de production
-```bash
-ng build --configuration production
-```
+### Interface utilisateur
+- Design responsive (mobile-first)
+- Thème Material Design
+- Animations fluides
+- Feedback utilisateur (snackbars, spinners)
 
-### Docker
-```bash
-docker build -t hypertube/frontend .
-docker run -p 4200:80 hypertube/frontend
-```
+## 🧪 Tests
 
-### Tests
 ```bash
 # Tests unitaires
-ng test
+npm test
 
 # Tests e2e
-ng e2e
+npm run e2e
+
+# Coverage
+npm run test:coverage
 ```
 
-## 📚 Structure
-
-```
-hypertube-app/
-├── src/
-│   ├── app/
-│   │   ├── components/          # Composants réutilisables
-│   │   │   └── header/
-│   │   ├── pages/               # Pages principales
-│   │   │   ├── home/
-│   │   │   ├── search/
-│   │   │   ├── profile/
-│   │   │   └── login/
-│   │   ├── services/            # Services Angular
-│   │   ├── models/              # Interfaces TypeScript
-│   │   └── guards/              # Guards de route
-│   ├── assets/                  # Images, icônes, etc.
-│   └── styles/                  # Styles globaux
-├── Dockerfile
-├── nginx.conf
-└── package.json
-```
-
-## 🔗 Intégration API
-
-L'application communique avec le backend via l'API Gateway :
-
-- **Auth** : `/api/auth/login`, `/api/auth/register`
-- **Movies** : `/api/movies`, `/api/movies/search`
-- **User** : `/api/user/profile`, `/api/user/watchlist`
-
-## 📊 Performance
-
-- **Lazy loading** des modules
-- **OnPush** change detection strategy
-- **TrackBy** functions pour les listes
-- **Image optimization** avec Angular
-- **Bundle splitting** automatique
-
-## 🐛 Debugging
+## 📦 Build
 
 ```bash
-# Mode debug
-ng serve --source-map
+# Build de production
+npm run build
 
-# Analyse du bundle
-ng build --stats-json
-npx webpack-bundle-analyzer dist/hypertube-app/stats.json
-``` 
+# Build avec analyse des bundles
+npm run build:analyze
+```
+
+## 🔒 Sécurité
+
+- **CSP** : Content Security Policy configurée
+- **HTTPS** : Support HTTPS en production
+- **JWT** : Tokens sécurisés avec expiration
+- **Validation** : Validation côté client et serveur
+
+## 🌐 Déploiement
+
+### Production avec Nginx
+
+L'application est configurée pour être servie par Nginx avec :
+- Gestion du routing Angular
+- Compression Gzip
+- Cache des assets statiques
+- Headers de sécurité
+
+### Variables d'environnement de production
+
+```bash
+# URL de l'API en production
+API_URL=https://api.hypertube.com
+
+# Autres configurations...
+```
+
+## 🤝 Contribution
+
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
+3. Commit les changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrir une Pull Request
+
+## 📄 Scripts disponibles
+
+- `npm start` : Serveur de développement
+- `npm run build` : Build de production
+- `npm test` : Tests unitaires
+- `npm run lint` : Linting du code
+- `npm run e2e` : Tests end-to-end
+
+## 🐛 Dépannage
+
+### Problèmes courants
+
+1. **Erreur de CORS** : Vérifiez que le backend autorise les requêtes depuis `http://localhost:4200`
+2. **Token expiré** : L'application gère automatiquement la déconnexion
+3. **Build failed** : Vérifiez la version de Node.js (20+ recommandé)
+
+### Logs
+
+```bash
+# Logs du conteneur Docker
+docker logs hypertube-frontend
+
+# Logs de développement
+# Ouvrir les DevTools du navigateur (F12)
+```
+
+## 📚 Technologies utilisées
+
+- **Angular 20** : Framework principal
+- **Angular Material** : Composants UI
+- **RxJS** : Programmation réactive
+- **TypeScript** : Langage de programmation
+- **SCSS** : Préprocesseur CSS
+- **Nginx** : Serveur web (production)
+
+## 📞 Support
+
+Pour toute question ou problème :
+1. Vérifiez la documentation
+2. Consultez les issues GitHub
+3. Créez une nouvelle issue si nécessaire

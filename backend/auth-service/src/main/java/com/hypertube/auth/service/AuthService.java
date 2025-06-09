@@ -1,15 +1,15 @@
 package com.hypertube.auth.service;
 
+import com.hypertube.auth.constant.AuthConstants;
 import com.hypertube.auth.dto.*;
 import com.hypertube.auth.entity.ERole;
 import com.hypertube.auth.entity.User;
 import com.hypertube.auth.entity.UserSession;
+import com.hypertube.auth.exception.AuthException;
 import com.hypertube.auth.repository.UserRepository;
-import com.hypertube.auth.repository.UserSessionRepository;
-import com.hypertube.auth.security.JwtUtils;
 import com.hypertube.auth.security.UserDetailsImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,165 +20,244 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
+/**
+ * Service principal d'authentification refactorisé pour une meilleure maintenabilité
+ */
 @Service
 @Transactional
 public class AuthService {
-
-    @Autowired
-    AuthenticationManager authenticationManager;
-
-    @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    UserSessionRepository sessionRepository;
-
-    @Autowired
-    PasswordEncoder encoder;
-
-    @Autowired
-    JwtUtils jwtUtils;
-
-    @Autowired
-    EmailService emailService;
-
-    public ResponseEntity<?> authenticateUser(LoginRequest loginRequest) {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+    
+    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final TokenService tokenService;
+    private final UserValidationService userValidationService;
+    
+    public AuthService(
+            AuthenticationManager authenticationManager,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            EmailService emailService,
+            TokenService tokenService,
+            UserValidationService userValidationService) {
+        
+        this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+        this.tokenService = tokenService;
+        this.userValidationService = userValidationService;
+    }
+    
+    /**
+     * Authentifie un utilisateur et génère les tokens
+     */
+    public JwtResponse authenticateUser(LoginRequest loginRequest) {
+        logger.debug("Authenticating user: {}", loginRequest.getUsernameOrEmail());
+        
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsernameOrEmail(), loginRequest.getPassword()));
-
+                new UsernamePasswordAuthenticationToken(
+                    loginRequest.getUsernameOrEmail(), 
+                    loginRequest.getPassword()
+                )
+        );
+        
         SecurityContextHolder.getContext().setAuthentication(authentication);
         
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
-        String jwt = jwtUtils.generateJwtToken(userPrincipal.getUsername());
-        String refreshToken = jwtUtils.generateRefreshToken(userPrincipal.getUsername());
-
-        // Créer une session
-        User user = userRepository.findById(userPrincipal.getId()).orElseThrow();
-        UserSession session = new UserSession(user, refreshToken, 
-                LocalDateTime.now().plusDays(30));
-        sessionRepository.save(session);
-
-        List<String> roles = userPrincipal.getAuthorities().stream()
-                .map(item -> item.getAuthority())
-                .toList();
-
-        return ResponseEntity.ok(new JwtResponse(jwt, refreshToken,
-                userPrincipal.getId(), 
-                userPrincipal.getUsername(), 
-                userPrincipal.getEmail(),
-                roles));
-    }
-
-    public ResponseEntity<?> registerUser(SignupRequest signUpRequest) {
-        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Error: Username is already taken!"));
-        }
-
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Error: Email is already in use!"));
-        }
-
-        // Créer nouveau compte utilisateur
-        User user = new User(signUpRequest.getUsername(), 
-                            signUpRequest.getEmail(),
-                            encoder.encode(signUpRequest.getPassword()),
-                            signUpRequest.getFirstName(),
-                            signUpRequest.getLastName());
-
-        user.setLanguage(signUpRequest.getLanguage());
-        user.setRole(ERole.ROLE_USER);
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new AuthException("User not found", AuthConstants.USER_NOT_FOUND));
         
-        // Token de vérification email
-        user.setEmailVerificationToken(UUID.randomUUID().toString());
-        user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusDays(1));
-
+        // Génération des tokens
+        String jwt = tokenService.generateAccessToken(userPrincipal.getUsername());
+        UserSession session = tokenService.createUserSession(user);
+        
+        List<String> roles = extractUserRoles(userPrincipal);
+        
+        logger.info("User {} authenticated successfully", userPrincipal.getUsername());
+        
+        return new JwtResponse(
+            jwt, 
+            session.getToken(),
+            userPrincipal.getId(),
+            userPrincipal.getUsername(),
+            userPrincipal.getEmail(),
+            roles
+        );
+    }
+    
+    /**
+     * Enregistre un nouveau utilisateur
+     */
+    public MessageResponse registerUser(SignupRequest signUpRequest) {
+        logger.debug("Registering new user: {}", signUpRequest.getUsername());
+        
+        // Validation
+        userValidationService.validateUserRegistration(
+            signUpRequest.getUsername(), 
+            signUpRequest.getEmail()
+        );
+        
+        // Création de l'utilisateur
+        User user = createNewUser(signUpRequest);
+        configureEmailVerification(user);
+        
         userRepository.save(user);
-
-        // Envoyer email de vérification
-        emailService.sendVerificationEmail(user);
-
-        return ResponseEntity.ok(new MessageResponse("User registered successfully! Please check your email to verify your account."));
-    }
-
-    public ResponseEntity<?> refreshToken(TokenRefreshRequest request) {
-        String requestRefreshToken = request.getRefreshToken();
-
-        UserSession session = sessionRepository.findByToken(requestRefreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
-
-        if (session.getExpiresAt().isBefore(LocalDateTime.now())) {
-            sessionRepository.delete(session);
-            throw new RuntimeException("Refresh token was expired. Please make a new signin request");
+        
+        // Envoi email si configuré
+        boolean isEmailConfigured = emailService.isMailConfigured();
+        if (isEmailConfigured) {
+            emailService.sendVerificationEmail(user);
+            logger.info("User {} registered with email verification", user.getUsername());
+            return new MessageResponse(AuthConstants.MSG_USER_REGISTERED_EMAIL_ENABLED);
+        } else {
+            logger.info("User {} registered without email verification", user.getUsername());
+            return new MessageResponse(AuthConstants.MSG_USER_REGISTERED_EMAIL_DISABLED);
         }
-
-        User user = session.getUser();
-        String token = jwtUtils.generateJwtToken(user.getUsername());
-
-        return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
     }
-
-    public ResponseEntity<?> logoutUser() {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Long userId = userDetails.getId();
-        sessionRepository.deactivateAllUserSessions(userId);
-        return ResponseEntity.ok(new MessageResponse("Log out successful!"));
+    
+    /**
+     * Renouvelle un access token à partir d'un refresh token
+     */
+    public TokenRefreshResponse refreshToken(TokenRefreshRequest request) {
+        logger.debug("Refreshing token");
+        
+        String newAccessToken = tokenService.renewAccessToken(request.getRefreshToken());
+        
+        return new TokenRefreshResponse(newAccessToken, request.getRefreshToken());
     }
-
-    public ResponseEntity<?> verifyEmail(String token) {
-        User user = userRepository.findByEmailVerificationToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
-
+    
+    /**
+     * Déconnecte un utilisateur
+     */
+    public MessageResponse logoutUser() {
+        UserDetailsImpl userDetails = getCurrentUserDetails();
+        tokenService.deactivateAllUserSessions(userDetails.getId());
+        
+        logger.info("User {} logged out", userDetails.getUsername());
+        return new MessageResponse(AuthConstants.MSG_LOGOUT_SUCCESS);
+    }
+    
+    /**
+     * Vérifie l'email d'un utilisateur
+     */
+    public MessageResponse verifyEmail(String token) {
+        logger.debug("Verifying email with token");
+        
+        User user = userValidationService.findUserByEmailVerificationToken(token);
+        
         if (user.getEmailVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Email verification token has expired");
+            throw new AuthException(
+                AuthConstants.MSG_VERIFICATION_TOKEN_EXPIRED, 
+                AuthConstants.TOKEN_EXPIRED
+            );
         }
-
+        
         user.setEmailVerified(true);
         user.setEmailVerificationToken(null);
         user.setEmailVerificationTokenExpiry(null);
         userRepository.save(user);
-
-        return ResponseEntity.ok(new MessageResponse("Email verified successfully!"));
+        
+        logger.info("Email verified for user: {}", user.getUsername());
+        return new MessageResponse(AuthConstants.MSG_EMAIL_VERIFIED);
     }
-
-    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
-
-        String resetToken = UUID.randomUUID().toString();
+    
+    /**
+     * Initie la procédure de mot de passe oublié
+     */
+    public MessageResponse forgotPassword(ForgotPasswordRequest request) {
+        logger.debug("Processing forgot password for email: {}", request.getEmail());
+        
+        User user = userValidationService.findUserByEmail(request.getEmail());
+        
+        String resetToken = tokenService.generatePasswordResetToken();
         user.setPasswordResetToken(resetToken);
-        user.setPasswordResetTokenExpiry(LocalDateTime.now().plusHours(24));
+        user.setPasswordResetTokenExpiry(LocalDateTime.now().plusHours(AuthConstants.PASSWORD_RESET_EXPIRY_HOURS));
         userRepository.save(user);
-
+        
         emailService.sendPasswordResetEmail(user, resetToken);
-
-        return ResponseEntity.ok(new MessageResponse("Password reset email sent!"));
+        
+        logger.info("Password reset email sent to: {}", request.getEmail());
+        return new MessageResponse(AuthConstants.MSG_PASSWORD_RESET_EMAIL_SENT);
     }
-
-    public ResponseEntity<?> resetPassword(ResetPasswordRequest request) {
-        User user = userRepository.findByPasswordResetToken(request.getToken())
-                .orElseThrow(() -> new RuntimeException("Invalid password reset token"));
-
+    
+    /**
+     * Réinitialise le mot de passe d'un utilisateur
+     */
+    public MessageResponse resetPassword(ResetPasswordRequest request) {
+        logger.debug("Resetting password");
+        
+        User user = userValidationService.findUserByPasswordResetToken(request.getToken());
+        
         if (user.getPasswordResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Password reset token has expired");
+            throw new AuthException(
+                AuthConstants.MSG_RESET_TOKEN_EXPIRED, 
+                AuthConstants.TOKEN_EXPIRED
+            );
         }
-
-        user.setPassword(encoder.encode(request.getNewPassword()));
+        
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setPasswordResetToken(null);
         user.setPasswordResetTokenExpiry(null);
         userRepository.save(user);
-
+        
         // Déconnecter toutes les sessions
-        sessionRepository.deactivateAllUserSessions(user.getId());
-
-        return ResponseEntity.ok(new MessageResponse("Password reset successfully!"));
+        tokenService.deactivateAllUserSessions(user.getId());
+        
+        logger.info("Password reset successfully for user: {}", user.getUsername());
+        return new MessageResponse(AuthConstants.MSG_PASSWORD_RESET_SUCCESS);
     }
     
+    /**
+     * Trouve un utilisateur par nom d'utilisateur
+     */
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        return userValidationService.findUserByUsername(username);
+    }
+    
+    // Méthodes utilitaires privées
+    
+    private User createNewUser(SignupRequest signUpRequest) {
+        return new User(
+            signUpRequest.getUsername(),
+            signUpRequest.getEmail(),
+            passwordEncoder.encode(signUpRequest.getPassword()),
+            signUpRequest.getFirstName(),
+            signUpRequest.getLastName()
+        );
+    }
+    
+    private void configureEmailVerification(User user) {
+        boolean isEmailConfigured = emailService.isMailConfigured();
+        
+        if (isEmailConfigured) {
+            user.setEmailVerificationToken(tokenService.generateEmailVerificationToken());
+            user.setEmailVerificationTokenExpiry(
+                LocalDateTime.now().plusDays(AuthConstants.EMAIL_VERIFICATION_EXPIRY_DAYS)
+            );
+            user.setEmailVerified(false);
+        } else {
+            user.setEmailVerified(true);
+            user.setEmailVerificationToken(null);
+            user.setEmailVerificationTokenExpiry(null);
+        }
+        
+        user.setLanguage(user.getLanguage() != null ? user.getLanguage() : "en");
+        user.setRole(ERole.ROLE_USER);
+    }
+    
+    private List<String> extractUserRoles(UserDetailsImpl userPrincipal) {
+        return userPrincipal.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .toList();
+    }
+    
+    private UserDetailsImpl getCurrentUserDetails() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (UserDetailsImpl) authentication.getPrincipal();
     }
 } 

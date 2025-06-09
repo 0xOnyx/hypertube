@@ -1,0 +1,9 @@
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/config/ProductionConfig.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/controller/FallbackController.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/filter/RequestHeaderGatewayFilterFactory.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/config/HypertubeGatewayProperties.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/filter/JwtAuthenticationGatewayFilterFactory.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/service/JwtService.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/ApiGatewayApplication.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/filter/LoggingGatewayFilterFactory.java
+/home/onyx/IdeaProjects/hypertube/backend/api-gateway/src/main/java/com/hypertube/gateway/config/GatewayConfig.java
