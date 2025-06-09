@@ -35,31 +35,9 @@ services:
       timeout: 5s
       retries: 3
 
-  # Eureka Service Discovery
-  eureka-server:
-    image: openjdk:21-jdk-slim
-    container_name: hypertube-eureka-dev
-    ports:
-      - "8761:8761"
-    volumes:
-      - ./backend/eureka-server:/app
-      - maven_cache_dev:/root/.m2
-    working_dir: /app
-    command: >
-      bash -c "
-        ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=development'
-      "
-    environment:
-      - SPRING_PROFILES_ACTIVE=development
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   # Auth Service (Spring Boot avec devtools)
   auth-service:
-    image: openjdk:21-jdk-slim
+    image: maven:3.9-eclipse-temurin-21
     container_name: hypertube-auth-dev
     ports:
       - "8081:8081"
@@ -69,7 +47,7 @@ services:
     working_dir: /app
     command: >
       bash -c "
-        ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments='
+        mvn spring-boot:run -Dspring-boot.run.jvmArguments='
           -Dspring.profiles.active=docker
           -Dspring.devtools.restart.enabled=true
           -Dspring.devtools.livereload.enabled=true
@@ -83,7 +61,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=hypertube_password
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
-      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
       - FRONTEND_URL=http://localhost:4200
       - AUTH_BASE_URL=https://hypertube.com:8443/api/auth
       - JWT_SECRET=dev-jwt-secret-key-hypertube-development-environment-secure-256-bits
@@ -91,8 +68,6 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      eureka-server:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
@@ -140,7 +115,7 @@ services:
 
   # API Gateway (Spring Boot)
   api-gateway:
-    image: openjdk:21-jdk-slim
+    image: maven:3.9-eclipse-temurin-21
     container_name: hypertube-gateway-dev
     ports:
       - "8080:8080"
@@ -150,18 +125,15 @@ services:
     working_dir: /app
     command: >
       bash -c "
-        ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments='
+        mvn spring-boot:run -Dspring-boot.run.jvmArguments='
           -Dspring.profiles.active=docker
           -Dspring.devtools.restart.enabled=true
         '
       "
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka
       - JWT_SECRET=dev-jwt-secret-key-hypertube-development-environment-secure-256-bits
     depends_on:
-      eureka-server:
-        condition: service_healthy
       auth-service:
         condition: service_healthy
       video-service:
