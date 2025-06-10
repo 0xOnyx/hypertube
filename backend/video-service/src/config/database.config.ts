@@ -16,7 +16,7 @@ export const databaseConfig = (
   database: configService.get('POSTGRES_DB', 'hypertube'),
   entities: [Movie, Torrent, WatchHistory, Comment],
   migrations: ['dist/database/migrations/*.js'],
-  synchronize: configService.get('NODE_ENV') !== 'production',
+  synchronize: false, // Disabled - using manual schema management
   logging: configService.get('NODE_ENV') === 'development',
   retryAttempts: 3,
   retryDelay: 3000,

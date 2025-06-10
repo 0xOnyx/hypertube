@@ -64,6 +64,16 @@ services:
       - FRONTEND_URL=http://localhost:4200
       - AUTH_BASE_URL=https://hypertube.com:8443/api/auth
       - JWT_SECRET=dev-jwt-secret-key-hypertube-development-environment-secure-256-bits
+      - EMAIL_VERIFICATION_ENABLED=false
+      - EUREKA_REGISTER=false
+      - EUREKA_FETCH=false
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-test_github_client_id}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-test_github_client_secret}
+      - FORTYTWO_CLIENT_ID=${FORTYTWO_CLIENT_ID:-}
+      - FORTYTWO_CLIENT_SECRET=${FORTYTWO_CLIENT_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,6 +143,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - JWT_SECRET=dev-jwt-secret-key-hypertube-development-environment-secure-256-bits
+      - EUREKA_REGISTER=false
+      - EUREKA_FETCH=false
+      - LOG_LEVEL=DEBUG
     depends_on:
       auth-service:
         condition: service_healthy
@@ -149,7 +162,7 @@ services:
     image: node:20-alpine
     container_name: hypertube-frontend-dev
     ports:
-      - "4200:4200"
+      - "4200:4200"  # Port de développement direct
     volumes:
       - ./frontend:/app
       - /app/node_modules  # Anonymous volume for node_modules
@@ -157,7 +170,7 @@ services:
     command: >
       sh -c "
         npm install &&
-        ng serve --host 0.0.0.0 --port 4200 --disable-host-check --poll 1000
+        ng serve --host 0.0.0.0 --port 4200 --disable-host-check --poll 1000 --live-reload
       "
     environment:
       - NODE_ENV=development
@@ -170,13 +183,13 @@ services:
       timeout: 10s
       retries: 5
 
-  # Nginx Reverse Proxy pour HTTPS
+  # Nginx Reverse Proxy pour HTTPS (ports différents pour éviter les conflits)
   nginx:
     image: nginx:alpine
     container_name: hypertube-nginx-dev
     ports:
-      - "8443:8443"
-      - "80:80"
+      - "8443:443"     # HTTPS pour hypertube.com
+      - "8090:8080"    # Port de monitoring/health check
     volumes:
       - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf
       - ./ssl:/etc/nginx/ssl

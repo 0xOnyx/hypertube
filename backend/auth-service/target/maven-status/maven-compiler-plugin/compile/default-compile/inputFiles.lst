@@ -2,8 +2,8 @@
 /app/src/main/java/com/hypertube/auth/config/LoggingConfig.java
 /app/src/main/java/com/hypertube/auth/dto/ResetPasswordRequest.java
 /app/src/main/java/com/hypertube/auth/service/UserValidationService.java
-/app/src/main/java/com/hypertube/auth/service/OAuth2UserInfoFactory.java
 /app/src/main/java/com/hypertube/auth/service/OAuth2Service.java
+/app/src/main/java/com/hypertube/auth/service/OAuth2UserInfoFactory.java
 /app/src/main/java/com/hypertube/auth/config/CloudConfig.java
 /app/src/main/java/com/hypertube/auth/controller/OAuth2Controller.java
 /app/src/main/java/com/hypertube/auth/service/AuthService.java
@@ -13,8 +13,8 @@
 /app/src/main/java/com/hypertube/auth/controller/AuthController.java
 /app/src/main/java/com/hypertube/auth/entity/UserSession.java
 /app/src/main/java/com/hypertube/auth/entity/ERole.java
-/app/src/main/java/com/hypertube/auth/config/ConditionalOAuth2Config.java
 /app/src/main/java/com/hypertube/auth/AuthServiceApplication.java
+/app/src/main/java/com/hypertube/auth/config/ConditionalOAuth2Config.java
 /app/src/main/java/com/hypertube/auth/service/CustomOAuth2UserService.java
 /app/src/main/java/com/hypertube/auth/exception/GlobalExceptionHandler.java
 /app/src/main/java/com/hypertube/auth/dto/JwtResponse.java
@@ -28,14 +28,14 @@
 /app/src/main/java/com/hypertube/auth/service/GoogleOAuth2UserInfo.java
 /app/src/main/java/com/hypertube/auth/service/EmailService.java
 /app/src/main/java/com/hypertube/auth/security/OAuth2AuthenticationSuccessHandler.java
-/app/src/main/java/com/hypertube/auth/repository/UserRepository.java
 /app/src/main/java/com/hypertube/auth/dto/TokenRefreshRequest.java
+/app/src/main/java/com/hypertube/auth/repository/UserRepository.java
 /app/src/main/java/com/hypertube/auth/dto/TokenRefreshResponse.java
 /app/src/main/java/com/hypertube/auth/service/FortyTwoOAuth2UserInfo.java
 /app/src/main/java/com/hypertube/auth/service/OAuth2UserInfo.java
 /app/src/main/java/com/hypertube/auth/service/TokenService.java
 /app/src/main/java/com/hypertube/auth/repository/UserSessionRepository.java
 /app/src/main/java/com/hypertube/auth/entity/User.java
-/app/src/main/java/com/hypertube/auth/dto/OAuth2ProviderInfo.java
 /app/src/main/java/com/hypertube/auth/dto/ForgotPasswordRequest.java
+/app/src/main/java/com/hypertube/auth/dto/OAuth2ProviderInfo.java
 /app/src/main/java/com/hypertube/auth/service/GithubOAuth2UserInfo.java

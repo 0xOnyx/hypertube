@@ -30,10 +30,8 @@ RUN rm /etc/nginx/conf.d/default.conf
 # Create SSL directory first
 RUN mkdir -p /etc/nginx/ssl
 
-# Copy SSL generation script from the ssl directory
+# Copy SSL generation script and make it executable
 COPY ssl/generate-ssl.sh /usr/local/bin/generate-ssl.sh
-
-# Make the SSL script executable
 RUN chmod +x /usr/local/bin/generate-ssl.sh
 
 # Generate SSL certificates for hypertube.com

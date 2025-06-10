@@ -36,10 +36,28 @@ public class JwtService {
 
     /**
      * Convertit la clé secrète string en SecretKey pour JJWT 0.12.6
+     * Supporte les clés en Base64 et en texte brut
      */
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            // Essaie d'abord le décodage Base64
+            byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (Exception e) {
+            // Si le décodage Base64 échoue, utilise la clé comme texte brut
+            log.debug("Clé JWT non Base64 détectée, utilisation en texte brut");
+            byte[] keyBytes = secretKey.getBytes();
+            
+            // Assure-toi que la clé fait au moins 256 bits (32 bytes) pour HMAC-SHA256
+            if (keyBytes.length < 32) {
+                // Rembourre la clé si elle est trop courte
+                byte[] paddedKey = new byte[32];
+                System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
+                keyBytes = paddedKey;
+            }
+            
+            return Keys.hmacShaKeyFor(keyBytes);
+        }
     }
 
     /**

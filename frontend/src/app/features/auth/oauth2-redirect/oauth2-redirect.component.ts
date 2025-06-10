@@ -38,11 +38,11 @@ export class OAuth2RedirectComponent implements OnInit {
         // Stocker les tokens
         localStorage.setItem('hypertube_token', token);
         localStorage.setItem('hypertube_refresh_token', refreshToken);
-        
+
         // Mettre à jour le service d'authentification
         this.authService.getCurrentUser().subscribe({
           next: () => {
-            this.router.navigate(['/dashboard']);
+            this.router.navigate(['/home']);
           },
           error: () => {
             this.router.navigate(['/auth/login']);
@@ -54,4 +54,4 @@ export class OAuth2RedirectComponent implements OnInit {
       }
     });
   }
-} 
+}

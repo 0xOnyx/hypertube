@@ -5,13 +5,21 @@
 
 echo "Generating SSL certificates for hypertube.com..."
 
+# Verify we have the necessary tools
+if ! command -v openssl >/dev/null 2>&1; then
+    echo "Error: openssl is not installed"
+    exit 1
+fi
+
 # Create ssl directory if it doesn't exist
 mkdir -p /etc/nginx/ssl
 
 # Generate private key
+echo "Generating private key..."
 openssl genrsa -out /etc/nginx/ssl/hypertube.key 2048
 
 # Create certificate with Subject Alternative Names for multiple domains
+echo "Creating certificate configuration..."
 cat > /tmp/hypertube.conf << 'EOF'
 [req]
 distinguished_name = req_distinguished_name
@@ -40,7 +48,14 @@ IP.2 = ::1
 EOF
 
 # Generate certificate with SAN
+echo "Generating certificate..."
 openssl req -new -x509 -key /etc/nginx/ssl/hypertube.key -out /etc/nginx/ssl/hypertube.crt -days 365 -config /tmp/hypertube.conf -extensions v3_req
+
+# Verify files were created
+if [ ! -f /etc/nginx/ssl/hypertube.key ] || [ ! -f /etc/nginx/ssl/hypertube.crt ]; then
+    echo "Error: SSL certificate files were not created"
+    exit 1
+fi
 
 # Set appropriate permissions
 chmod 600 /etc/nginx/ssl/hypertube.key
@@ -49,7 +64,7 @@ chmod 644 /etc/nginx/ssl/hypertube.crt
 # Clean up
 rm /tmp/hypertube.conf
 
-echo "SSL certificates generated:"
+echo "SSL certificates generated successfully:"
 echo "  - Private key: /etc/nginx/ssl/hypertube.key"
 echo "  - Certificate: /etc/nginx/ssl/hypertube.crt"
 echo "  - Validity: 365 days"

@@ -57,7 +57,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=hypertube_user
       - SPRING_DATASOURCE_PASSWORD=hypertube_password
       # Configuration JWT
-      - JWT_SECRET=hypertubeSecretKeyDockerDevelopment2024
+      - JWT_SECRET=dev-jwt-secret-key-hypertube-development-environment-secure-256-bits
       - JWT_EXPIRATION=86400000
       - JWT_REFRESH_EXPIRATION=2592000000
       # Configuration Frontend
@@ -150,7 +150,7 @@ services:
     container_name: hypertube-frontend
     ports:
       - "4200:80"      # HTTP pour localhost/développement
-      - "8443:443"     # HTTPS pour hypertube.com
+      - "8083:443"     # HTTPS pour hypertube.com
       - "8090:8080"    # Port de monitoring/health check
     environment:
       - NGINX_DOMAIN=hypertube.com

@@ -28,7 +28,7 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('api-docs', app, document);
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('');
     const port = process.env.PORT || 3002;
     await app.listen(port);
     console.log(`🚀 Video Service started on port ${port}`);

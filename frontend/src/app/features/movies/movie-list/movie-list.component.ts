@@ -1,13 +1,17 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { RouterModule, Router } from '@angular/router';
 
 import { MovieService } from '../../../core/services/movie.service';
 import { Movie } from '../../../core/models/movie.model';
+import {
+  HeaderComponent,
+  MovieGridComponent,
+  SearchFiltersComponent,
+  MovieCardData,
+  FilterOption,
+  SearchFilters
+} from '../../../shared/components';
 
 @Component({
   selector: 'app-movie-list',
@@ -15,101 +19,144 @@ import { Movie } from '../../../core/models/movie.model';
   imports: [
     CommonModule,
     RouterModule,
-    MatCardModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-    MatPaginatorModule
+    HeaderComponent,
+    MovieGridComponent,
+    SearchFiltersComponent
   ],
   template: `
-    <div class="movie-list-container">
-      <h1>Films Populaires</h1>
-      
-      @if (isLoading) {
-        <div class="loading-container">
-          <mat-spinner></mat-spinner>
-        </div>
-      } @else {
-        <div class="movies-grid">
-          @for (movie of movies; track movie.id) {
-            <mat-card class="movie-card" [routerLink]="['/movies', movie.id]">
-              <img mat-card-image [src]="movie.poster" [alt]="movie.title">
-              <mat-card-header>
-                <mat-card-title>{{ movie.title }}</mat-card-title>
-                <mat-card-subtitle>{{ movie.year }} • ⭐ {{ movie.imdbRating }}/10</mat-card-subtitle>
-              </mat-card-header>
-              <mat-card-content>
-                <p class="plot">{{ movie.plot | slice:0:100 }}...</p>
-              </mat-card-content>
-            </mat-card>
-          }
-        </div>
+    <div class="relative flex size-full min-h-screen flex-col bg-dark-bg overflow-x-hidden font-spline">
+      <div class="layout-container flex h-full grow flex-col">
+        <!-- Header -->
+        <app-header
+          appName="Hypertube"
+          [navigationLinks]="navigationLinks"
+          [userAvatar]="userAvatar"
+          (searchQueryChange)="onHeaderSearch($event)"
+          (searchSubmit)="onHeaderSearchSubmit($event)"
+          (bookmarkClick)="onBookmarkClick()"
+          (userClick)="onUserClick()"
+        ></app-header>
 
-        @if (totalResults > 0) {
-          <mat-paginator 
-            [length]="totalResults"
-            [pageSize]="20"
-            [pageIndex]="currentPage - 1"
-            (page)="onPageChange($event)">
-          </mat-paginator>
-        }
-      }
+        <!-- Main Content -->
+        <div class="px-40 flex flex-1 justify-center py-5">
+          <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+
+            <!-- Search Filters -->
+            <app-search-filters
+              [showSearchBar]="true"
+              searchPlaceholder="Search movies..."
+              [genreOptions]="genreOptions"
+              [yearOptions]="yearOptions"
+              [additionalFilters]="additionalFilters"
+              (searchChange)="onSearchChange($event)"
+              (filtersChange)="onFiltersChange($event)"
+            ></app-search-filters>
+
+            <!-- Movies Grid -->
+            <app-movie-grid
+              title="Popular Movies"
+              [movies]="movieCards"
+              [loading]="isLoading"
+              [showLoadMore]="hasMorePages"
+              emptyMessage="No movies found"
+              emptySubMessage="Try adjusting your search or filters"
+              (movieClick)="onMovieClick($event)"
+              (playMovie)="onPlayMovie($event)"
+              (bookmarkMovie)="onBookmarkMovie($event)"
+              (loadMore)="onLoadMore()"
+            ></app-movie-grid>
+
+          </div>
+        </div>
+      </div>
     </div>
   `,
-  styles: [`
-    .movie-list-container {
-      padding: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      margin-bottom: 24px;
-      color: #333;
-    }
-
-    .loading-container {
-      display: flex;
-      justify-content: center;
-      padding: 48px;
-    }
-
-    .movies-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 24px;
-      margin-bottom: 32px;
-    }
-
-    .movie-card {
-      cursor: pointer;
-      transition: transform 0.2s ease-in-out;
-      height: 500px;
-    }
-
-    .movie-card:hover {
-      transform: scale(1.02);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .movie-card img {
-      height: 300px;
-      object-fit: cover;
-    }
-
-    .plot {
-      color: #666;
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
-  `]
+  styles: []
 })
 export class MovieListComponent implements OnInit {
   private movieService = inject(MovieService);
+  private router = inject(Router);
 
   movies: Movie[] = [];
   isLoading = false;
   currentPage = 1;
   totalResults = 0;
+  searchQuery = '';
+  currentFilters: SearchFilters = {};
+
+  // Navigation
+  navigationLinks = [
+    { label: 'Home', route: '/home' },
+    { label: 'Movies', route: '/movies' },
+    { label: 'Series', route: '/series' },
+    { label: 'My List', route: '/watchlist' }
+  ];
+
+  userAvatar = 'https://via.placeholder.com/40';
+
+  // Filter options
+  genreOptions: FilterOption[] = [
+    { value: 'action', label: 'Action' },
+    { value: 'adventure', label: 'Adventure' },
+    { value: 'comedy', label: 'Comedy' },
+    { value: 'drama', label: 'Drama' },
+    { value: 'horror', label: 'Horror' },
+    { value: 'sci-fi', label: 'Sci-Fi' },
+    { value: 'thriller', label: 'Thriller' }
+  ];
+
+  yearOptions: FilterOption[] = [
+    { value: '2024', label: '2024' },
+    { value: '2023', label: '2023' },
+    { value: '2022', label: '2022' },
+    { value: '2021', label: '2021' },
+    { value: '2020', label: '2020' },
+    { value: '2010s', label: '2010s' },
+    { value: '2000s', label: '2000s' },
+    { value: '1990s', label: '1990s' }
+  ];
+
+  additionalFilters = [
+    {
+      key: 'rating',
+      label: 'Rating',
+      options: [
+        { value: '9+', label: '9.0+' },
+        { value: '8+', label: '8.0+' },
+        { value: '7+', label: '7.0+' },
+        { value: '6+', label: '6.0+' }
+      ]
+    },
+    {
+      key: 'language',
+      label: 'Language',
+      options: [
+        { value: 'en', label: 'English' },
+        { value: 'fr', label: 'French' },
+        { value: 'es', label: 'Spanish' },
+        { value: 'de', label: 'German' },
+        { value: 'it', label: 'Italian' }
+      ]
+    }
+  ];
+
+  get movieCards(): MovieCardData[] {
+    return this.movies?.map(movie => ({
+      id: movie.id,
+      title: movie.title,
+      subtitle: `${movie.year || 'N/A'} • ⭐ ${movie.rating || movie.imdbRating || 'N/A'}/10`,
+      posterUrl: movie.posterUrl || movie.poster || 'https://via.placeholder.com/300x450',
+      year: movie.year,
+      rating: movie.rating || movie.imdbRating,
+      genres: movie.genres || [],
+      isBookmarked: false // TODO: implement bookmark logic
+    }));
+  }
+
+  get hasMorePages(): boolean {
+    const itemsPerPage = 20; // Default limit used by backend
+    return this.currentPage * itemsPerPage < this.totalResults;
+  }
 
   ngOnInit(): void {
     this.loadMovies();
@@ -119,8 +166,14 @@ export class MovieListComponent implements OnInit {
     this.isLoading = true;
     this.movieService.getPopularMovies(this.currentPage).subscribe({
       next: (response) => {
-        this.movies = response.movies;
-        this.totalResults = response.totalResults;
+        if (response && response.data){
+          if (this.currentPage === 1) {
+            this.movies = response.data;
+          } else {
+            this.movies = [...this.movies, ...response.data];
+          }
+          this.totalResults = response.total;
+        }
         this.isLoading = false;
       },
       error: (error) => {
@@ -130,8 +183,62 @@ export class MovieListComponent implements OnInit {
     });
   }
 
-  onPageChange(event: PageEvent): void {
-    this.currentPage = event.pageIndex + 1;
+  // Search and filter handlers
+  onHeaderSearch(query: string): void {
+    this.searchQuery = query;
+    this.performSearch();
+  }
+
+  onHeaderSearchSubmit(query: string): void {
+    this.searchQuery = query;
+    this.performSearch();
+  }
+
+  onSearchChange(query: string): void {
+    this.searchQuery = query;
+    this.performSearch();
+  }
+
+  onFiltersChange(filters: SearchFilters): void {
+    this.currentFilters = filters;
+    this.currentPage = 1;
+    this.performSearch();
+  }
+
+  private performSearch(): void {
+    // TODO: Implement search with filters
+    console.log('Search:', this.searchQuery, 'Filters:', this.currentFilters);
+    this.currentPage = 1;
     this.loadMovies();
   }
-} 
+
+  // Action handlers
+  onMovieClick(movie: MovieCardData): void {
+    this.router.navigate(['/movies', movie.id]);
+  }
+
+  onPlayMovie(movie: MovieCardData): void {
+    // TODO: Implement direct play functionality
+    console.log('Play movie:', movie.title);
+    this.router.navigate(['/movies', movie.id]);
+  }
+
+  onBookmarkMovie(movie: MovieCardData): void {
+    // TODO: Implement bookmark functionality
+    console.log('Bookmark movie:', movie.title);
+  }
+
+  onLoadMore(): void {
+    this.currentPage++;
+    this.loadMovies();
+  }
+
+  // Navigation handlers
+  onBookmarkClick(): void {
+    this.router.navigate(['/watchlist']);
+  }
+
+  onUserClick(): void {
+    this.router.navigate(['/profile']);
+  }
+}

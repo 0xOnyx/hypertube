@@ -14,7 +14,7 @@ const databaseConfig = (configService) => ({
     database: configService.get('POSTGRES_DB', 'hypertube'),
     entities: [movie_entity_1.Movie, torrent_entity_1.Torrent, watch_history_entity_1.WatchHistory, comment_entity_1.Comment],
     migrations: ['dist/database/migrations/*.js'],
-    synchronize: configService.get('NODE_ENV') !== 'production',
+    synchronize: false,
     logging: configService.get('NODE_ENV') === 'development',
     retryAttempts: 3,
     retryDelay: 3000,

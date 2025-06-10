@@ -1,25 +1,42 @@
 export interface Movie {
   id: number;
+  imdbId: string;
   title: string;
-  year: number;
-  runtime: number;
-  genres: string[];
-  director: string;
-  actors: string;
-  plot: string;
-  language: string;
-  country: string;
-  poster: string;
-  imdbRating: number;
-  imdbID: string;
-  type: string;
+  originalTitle?: string;
+  year?: number;
+  rating?: number;
+  runtime?: number;
+  synopsis?: string;
+  genres?: string[];
+  directors?: string[];
+  actors?: string[];
+  posterUrl?: string;
+  backdropUrl?: string;
+  trailerUrl?: string;
+  status?: string;
+  videoPath?: string;
+  fileSize?: number;
+  quality?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  
+  // Legacy fields for compatibility (will be mapped from new fields)
+  imdbRating?: number;
+  director?: string;
+  plot?: string;
+  language?: string;
+  country?: string;
+  poster?: string;
+  imdbID?: string;
+  type?: string;
   metascore?: number;
 }
 
 export interface MovieSearchResponse {
-  movies: Movie[];
-  totalResults: number;
+  data: Movie[];        // Backend returns "data" not "movies"
+  total: number;        // Backend returns "total" not "totalResults"
   page: number;
+  limit: number;
   totalPages: number;
 }
 

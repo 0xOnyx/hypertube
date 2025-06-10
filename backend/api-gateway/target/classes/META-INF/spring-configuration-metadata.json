@@ -9,105 +9,96 @@
       "name": "hypertube.gateway.circuit-breaker",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties",
-      "sourceMethod": "getCircuitBreaker()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.CircuitBreakerConfig getCircuitBreaker() "
     },
     {
       "name": "hypertube.gateway.cors",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$CorsConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties",
-      "sourceMethod": "getCors()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.CorsConfig getCors() "
     },
     {
       "name": "hypertube.gateway.jwt",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties",
-      "sourceMethod": "getJwt()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.JwtConfig getJwt() "
     },
     {
       "name": "hypertube.gateway.rate-limit",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties",
-      "sourceMethod": "getRateLimit()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.RateLimitConfig getRateLimit() "
     },
     {
       "name": "hypertube.gateway.retry",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties",
-      "sourceMethod": "getRetry()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.RetryConfig getRetry() "
     },
     {
       "name": "hypertube.gateway.services",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServicesConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties",
-      "sourceMethod": "getServices()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.ServicesConfig getServices() "
     },
     {
       "name": "hypertube.gateway.services.auth-service",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServicesConfig",
-      "sourceMethod": "getAuthService()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.ServiceConfig getAuthService() "
     },
     {
       "name": "hypertube.gateway.services.video-service",
       "type": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig",
       "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServicesConfig",
-      "sourceMethod": "getVideoService()"
+      "sourceMethod": "public com.hypertube.gateway.config.HypertubeGatewayProperties.ServiceConfig getVideoService() "
     }
   ],
   "properties": [
     {
       "name": "hypertube.gateway.circuit-breaker.enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.circuit-breaker.event-consumer-buffer-size",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": 10
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.circuit-breaker.failure-rate-threshold",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": 50
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.circuit-breaker.minimum-number-of-calls",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": 20
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.circuit-breaker.permitted-number-of-calls-in-half-open-state",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": 30
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.circuit-breaker.sliding-window-size",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": 100
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.circuit-breaker.sliding-window-type",
       "type": "java.lang.String",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": "TIME_BASED"
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.circuit-breaker.wait-duration-in-open-state",
       "type": "java.time.Duration",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig",
-      "defaultValue": "50s"
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CircuitBreakerConfig"
     },
     {
       "name": "hypertube.gateway.cors.allow-credentials",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CorsConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CorsConfig"
     },
     {
       "name": "hypertube.gateway.cors.allowed-headers",
@@ -127,8 +118,7 @@
     {
       "name": "hypertube.gateway.cors.enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CorsConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CorsConfig"
     },
     {
       "name": "hypertube.gateway.cors.exposed-headers",
@@ -138,38 +128,32 @@
     {
       "name": "hypertube.gateway.cors.max-age",
       "type": "java.lang.Long",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CorsConfig",
-      "defaultValue": 3600
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$CorsConfig"
     },
     {
       "name": "hypertube.gateway.jwt.clock-skew-seconds",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig",
-      "defaultValue": 60
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig"
     },
     {
       "name": "hypertube.gateway.jwt.expiration",
       "type": "java.lang.Long",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig",
-      "defaultValue": 86400000
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig"
     },
     {
       "name": "hypertube.gateway.jwt.issuer",
       "type": "java.lang.String",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig",
-      "defaultValue": "hypertube-app"
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig"
     },
     {
       "name": "hypertube.gateway.jwt.refresh-expiration",
       "type": "java.lang.Long",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig",
-      "defaultValue": 604800000
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig"
     },
     {
       "name": "hypertube.gateway.jwt.secret",
       "type": "java.lang.String",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig",
-      "defaultValue": "hypertubeSecretKeyForDevelopmentOnly"
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$JwtConfig"
     },
     {
       "name": "hypertube.gateway.public-endpoints",
@@ -179,86 +163,72 @@
     {
       "name": "hypertube.gateway.rate-limit.auth-burst-capacity",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig",
-      "defaultValue": 20
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig"
     },
     {
       "name": "hypertube.gateway.rate-limit.auth-replenish-rate",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig",
-      "defaultValue": 10
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig"
     },
     {
       "name": "hypertube.gateway.rate-limit.default-burst-capacity",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig",
-      "defaultValue": 200
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig"
     },
     {
       "name": "hypertube.gateway.rate-limit.default-replenish-rate",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig",
-      "defaultValue": 100
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig"
     },
     {
       "name": "hypertube.gateway.rate-limit.enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig"
     },
     {
       "name": "hypertube.gateway.rate-limit.requested-tokens",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig",
-      "defaultValue": 1
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RateLimitConfig"
     },
     {
       "name": "hypertube.gateway.retry.enable-exponential-backoff",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig"
     },
     {
       "name": "hypertube.gateway.retry.enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig"
     },
     {
       "name": "hypertube.gateway.retry.exponential-backoff-multiplier",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
-      "defaultValue": 2
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig"
     },
     {
       "name": "hypertube.gateway.retry.first-backoff",
       "type": "java.time.Duration",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
-      "defaultValue": "50ms"
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig"
     },
     {
       "name": "hypertube.gateway.retry.max-attempts",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
-      "defaultValue": 3
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig"
     },
     {
       "name": "hypertube.gateway.retry.max-backoff",
       "type": "java.time.Duration",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
-      "defaultValue": "500ms"
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig"
     },
     {
       "name": "hypertube.gateway.retry.wait-duration",
       "type": "java.time.Duration",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig",
-      "defaultValue": "500ms"
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$RetryConfig"
     },
     {
       "name": "hypertube.gateway.services.auth-service.circuit-breaker-enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig"
     },
     {
       "name": "hypertube.gateway.services.auth-service.health-path",
@@ -273,8 +243,7 @@
     {
       "name": "hypertube.gateway.services.auth-service.retry-attempts",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig",
-      "defaultValue": 0
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig"
     },
     {
       "name": "hypertube.gateway.services.auth-service.timeout",
@@ -289,8 +258,7 @@
     {
       "name": "hypertube.gateway.services.video-service.circuit-breaker-enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig",
-      "defaultValue": true
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig"
     },
     {
       "name": "hypertube.gateway.services.video-service.health-path",
@@ -305,8 +273,7 @@
     {
       "name": "hypertube.gateway.services.video-service.retry-attempts",
       "type": "java.lang.Integer",
-      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig",
-      "defaultValue": 0
+      "sourceType": "com.hypertube.gateway.config.HypertubeGatewayProperties$ServiceConfig"
     },
     {
       "name": "hypertube.gateway.services.video-service.timeout",
