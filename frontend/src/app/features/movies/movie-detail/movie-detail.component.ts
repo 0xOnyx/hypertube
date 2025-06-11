@@ -9,7 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 
 import { MovieService } from '../../../core/services/movie.service';
-import { MovieDetails } from '../../../core/models/movie.model';
+import { MovieDetails, Torrent } from '../../../core/models/movie.model';
 
 @Component({
   selector: 'app-movie-detail',
@@ -32,14 +32,14 @@ import { MovieDetails } from '../../../core/models/movie.model';
       } @else if (movie) {
         <div class="movie-header">
           <div class="poster-section">
-            <img [src]="movie.poster" [alt]="movie.title" class="movie-poster">
+            <img [src]="movie.posterUrl" [alt]="movie.title" class="movie-poster">
           </div>
           
           <div class="info-section">
             <h1>{{ movie.title }}</h1>
             <div class="movie-meta">
               <span class="year">{{ movie.year }}</span>
-              <span class="rating">⭐ {{ movie.imdbRating }}/10</span>
+              <span class="rating">⭐ {{ movie.rating }}/10</span>
               <span class="runtime">{{ movie.runtime }} min</span>
             </div>
             
@@ -49,22 +49,37 @@ import { MovieDetails } from '../../../core/models/movie.model';
               }
             </div>
             
-            <p class="plot">{{ movie.plot }}</p>
+            <p class="plot">{{ movie.synopsis }}</p>
             
             <div class="movie-details">
               <div class="detail-item">
-                <strong>Réalisateur:</strong> {{ movie.director }}
+                <strong>Réalisateur(s):</strong> {{ movie.directors?.join(', ') }}
               </div>
               <div class="detail-item">
-                <strong>Acteurs:</strong> {{ movie.actors }}
+                <strong>Acteurs:</strong> {{ movie.actors?.join(', ') }}
               </div>
-              <div class="detail-item">
-                <strong>Langue:</strong> {{ movie.language }}
-              </div>
-              <div class="detail-item">
-                <strong>Pays:</strong> {{ movie.country }}
-              </div>
+              @if (movie.status) {
+                <div class="detail-item">
+                  <strong>Statut:</strong> {{ movie.status }}
+                </div>
+              }
             </div>
+
+            @if (movie.torrents && movie.torrents.length > 0) {
+              <div class="torrents-section">
+                <h3>Qualités disponibles:</h3>
+                <div class="torrent-list">
+                  @for (torrent of movie.torrents; track torrent.id) {
+                    <mat-chip 
+                      [class]="'torrent-chip quality-' + torrent.quality"
+                      (click)="selectTorrent(torrent)">
+                      {{ torrent.quality }} 
+                      <span class="seeders">({{ torrent.seeders }} seeders)</span>
+                    </mat-chip>
+                  }
+                </div>
+              </div>
+            }
             
             <div class="actions">
               <button mat-raised-button color="primary" (click)="watchMovie()">
@@ -102,14 +117,17 @@ import { MovieDetails } from '../../../core/models/movie.model';
               <mat-card class="comment-card">
                 <mat-card-header>
                   <div mat-card-avatar class="user-avatar">
-                    @if (comment.user.profilePicture) {
-                      <img [src]="comment.user.profilePicture" [alt]="comment.user.username">
+                    @if (comment.user?.profilePicture) {
+                      <img [src]="comment.user?.profilePicture" [alt]="comment.user?.username">
                     } @else {
                       <mat-icon>person</mat-icon>
                     }
                   </div>
-                  <mat-card-title>{{ comment.user.username }}</mat-card-title>
+                  <mat-card-title>{{ comment.user?.username || 'Utilisateur #' + comment.userId }}</mat-card-title>
                   <mat-card-subtitle>{{ comment.createdAt | date:'short' }}</mat-card-subtitle>
+                  @if (comment.rating) {
+                    <div class="comment-rating">⭐ {{ comment.rating }}/5</div>
+                  }
                 </mat-card-header>
                 <mat-card-content>
                   <p>{{ comment.content }}</p>
@@ -187,6 +205,51 @@ import { MovieDetails } from '../../../core/models/movie.model';
       color: #666;
     }
 
+    .torrents-section {
+      margin-bottom: 24px;
+    }
+
+    .torrents-section h3 {
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .torrent-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .torrent-chip {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .torrent-chip:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .torrent-chip.quality-720p {
+      background-color: #4caf50;
+      color: white;
+    }
+
+    .torrent-chip.quality-1080p {
+      background-color: #2196f3;
+      color: white;
+    }
+
+    .torrent-chip.quality-2160p {
+      background-color: #9c27b0;
+      color: white;
+    }
+
+    .seeders {
+      font-size: 0.8em;
+      opacity: 0.8;
+    }
+
     .actions {
       display: flex;
       gap: 16px;
@@ -203,6 +266,12 @@ import { MovieDetails } from '../../../core/models/movie.model';
 
     .comment-card {
       margin-bottom: 16px;
+    }
+
+    .comment-rating {
+      font-size: 0.9em;
+      color: #ff9800;
+      margin-top: 4px;
     }
 
     .user-avatar {
@@ -240,6 +309,10 @@ import { MovieDetails } from '../../../core/models/movie.model';
       .movie-poster {
         max-width: 300px;
       }
+
+      .torrent-list {
+        justify-content: center;
+      }
     }
   `]
 })
@@ -250,6 +323,7 @@ export class MovieDetailComponent implements OnInit {
   movie: MovieDetails | null = null;
   isLoading = false;
   streamingUrl: string | null = null;
+  selectedTorrent: Torrent | null = null;
 
   ngOnInit(): void {
     const movieId = Number(this.route.snapshot.paramMap.get('id'));
@@ -272,8 +346,15 @@ export class MovieDetailComponent implements OnInit {
     });
   }
 
+  selectTorrent(torrent: Torrent): void {
+    this.selectedTorrent = torrent;
+    console.log('Torrent sélectionné:', torrent);
+  }
+
   watchMovie(): void {
     if (this.movie) {
+      // Note: Le backend ne supporte pas encore la sélection de torrent spécifique
+      // TODO: Étendre l'API pour supporter torrentId
       this.movieService.getStreamingUrl(this.movie.id).subscribe({
         next: (response) => {
           this.streamingUrl = response.url;

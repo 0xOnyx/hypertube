@@ -265,10 +265,24 @@ export class MovieSearchComponent {
     // Apply rating filter
     if (this.currentFilters.rating) {
       const ratingThreshold = parseFloat(this.currentFilters.rating.replace('+', ''));
-      filtered = filtered.filter(movie => (movie.rating || movie.imdbRating || 0) >= ratingThreshold);
+      filtered = filtered.filter(movie => {
+        const movieRating = this.getNumericRating(movie.rating || movie.imdbRating);
+        return movieRating >= ratingThreshold;
+      });
     }
 
     return filtered;
+  }
+
+  private getNumericRating(rating: string | number | undefined): number {
+    if (typeof rating === 'number') {
+      return rating;
+    }
+    if (typeof rating === 'string') {
+      const parsed = parseFloat(rating);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
   }
 
   getResultsTitle(): string {

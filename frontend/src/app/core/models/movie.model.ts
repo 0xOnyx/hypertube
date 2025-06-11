@@ -4,7 +4,7 @@ export interface Movie {
   title: string;
   originalTitle?: string;
   year?: number;
-  rating?: number;
+  rating?: string;
   runtime?: number;
   synopsis?: string;
   genres?: string[];
@@ -17,8 +17,8 @@ export interface Movie {
   videoPath?: string;
   fileSize?: number;
   quality?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string;
+  updatedAt?: string;
   
   // Legacy fields for compatibility (will be mapped from new fields)
   imdbRating?: number;
@@ -40,20 +40,58 @@ export interface MovieSearchResponse {
   totalPages: number;
 }
 
-export interface MovieDetails extends Movie {
-  comments?: Comment[];
-  watched?: boolean;
-  watchedAt?: string;
+export interface Torrent {
+  id: number;
+  magnetUri: string;
+  hash: string;
+  name: string;
+  size: string;
+  seeders: number;
+  leechers: number;
+  quality: string;
+  status: string;
+  progress: string;
+  filePath?: string;
+  createdAt: string;
+  updatedAt: string;
+  movieId: number;
+}
+
+export interface WatchHistory {
+  id: number;
+  userId: number;
+  watchPosition: number;
+  totalWatchTime: number;
+  completed: boolean;
+  progressPercentage: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  movieId: number;
 }
 
 export interface Comment {
   id: number;
+  userId: number;
   content: string;
-  user: {
+  rating?: string;
+  isModerated: boolean;
+  isVisible: boolean;
+  createdAt: string;
+  updatedAt: string;
+  movieId: number;
+  // Optional user info that might be populated by joins
+  user?: {
     id: number;
     username: string;
     profilePicture?: string;
   };
-  createdAt: string;
-  updatedAt: string;
+}
+
+export interface MovieDetails extends Movie {
+  torrents?: Torrent[];
+  comments?: Comment[];
+  watchHistory?: WatchHistory[];
+  watched?: boolean;
+  watchedAt?: string;
 } 
