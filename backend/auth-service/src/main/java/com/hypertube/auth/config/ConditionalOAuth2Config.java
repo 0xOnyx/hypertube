@@ -36,7 +36,7 @@ public class ConditionalOAuth2Config {
     @Value("${FORTYTWO_CLIENT_SECRET:}")
     private String fortyTwoClientSecret;
     
-    @Value("${hypertube.auth.baseUrl:https://hypertube.com:8443/api/auth}")
+    @Value("${FRONTEND_URL}" + "/api")
     private String authBaseUrl;
 
     @Bean

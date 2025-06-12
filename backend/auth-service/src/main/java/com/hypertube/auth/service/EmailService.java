@@ -16,7 +16,7 @@ public class EmailService {
     @Value("${hypertube.email.from}")
     private String fromEmail;
 
-    @Value("${hypertube.frontend.url}")
+    @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
     @Value("${hypertube.email.verification.enabled:false}")

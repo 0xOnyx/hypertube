@@ -25,7 +25,7 @@ public class OAuth2Service {
     @Value("${FORTYTWO_CLIENT_ID:}")
     private String fortyTwoClientId;
     
-    @Value("${hypertube.auth.baseUrl:https://hypertube.com:8443/api/auth}")
+    @Value("${FRONTEND_URL}")
     private String authBaseUrl;
 
     public List<OAuth2ProviderInfo> getAvailableProviders() {
@@ -39,7 +39,7 @@ public class OAuth2Service {
                     providers.add(new OAuth2ProviderInfo(
                         "google", 
                         "Google", 
-                        authBaseUrl + "/oauth2/authorization/google",
+                        authBaseUrl + "/api/oauth2/authorization/google",
                         "#4285f4",
                         "fab fa-google"
                     ));
@@ -55,7 +55,7 @@ public class OAuth2Service {
                     providers.add(new OAuth2ProviderInfo(
                         "github", 
                         "GitHub", 
-                        authBaseUrl + "/oauth2/authorization/github",
+                        authBaseUrl + "/api/oauth2/authorization/github",
                         "#333333",
                         "fab fa-github"
                     ));
@@ -71,7 +71,7 @@ public class OAuth2Service {
                     providers.add(new OAuth2ProviderInfo(
                         "fortytwo", 
                         "42", 
-                        authBaseUrl + "/oauth2/authorization/fortytwo",
+                        authBaseUrl + "/api/oauth2/authorization/fortytwo",
                         "#00babc",
                         "fas fa-graduation-cap"
                     ));

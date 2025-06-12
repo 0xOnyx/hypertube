@@ -33,16 +33,24 @@ services:
       timeout: 5s
       retries: 3
 
-  # Auth Service (Spring Boot avec devtools)
+  # Auth Service (Spring Boot avec devtools et hot reload)
   auth-service:
-    build:
-      context: ./backend/auth-service
-      dockerfile: Dockerfile
+    image: maven:3.9.4-amazoncorretto-21
     container_name: hypertube-auth-service
     ports:
       - "8081:8081"
+      - "35729:35729"  # Port pour LiveReload de Spring DevTools
+    volumes:
+      - ./backend/auth-service:/app
+      - maven_cache_dev:/root/.m2  # Cache Maven pour éviter de re-télécharger les dépendances
+    working_dir: /app
+    command: >
+      sh -c "
+        mvn clean compile &&
+        mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.devtools.restart.enabled=true -Dspring.devtools.livereload.enabled=true'
+      "
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,dev
       - EMAIL_VERIFICATION_ENABLED=false
       - EUREKA_REGISTER=false
       - EUREKA_FETCH=false
@@ -58,9 +66,14 @@ services:
       - JWT_EXPIRATION=86400000
       - JWT_REFRESH_EXPIRATION=2592000000
       # Configuration Frontend
-      - FRONTEND_URL=http://localhost:4200
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:4200}
       # Configuration Server
       - SERVER_PORT=8081
+      # Configuration DevTools pour hot reload
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+      - SPRING_DEVTOOLS_RESTART_POLL_INTERVAL=1000
+      - SPRING_DEVTOOLS_RESTART_QUIET_PERIOD=400
       # Configuration Email (optionnelle)
       - EMAIL_FROM=noreply@hypertube.com
       - MAIL_HOST=smtp.gmail.com
@@ -73,8 +86,8 @@ services:
       # Configuration OAuth2 (optionnelle - laissez vide pour désactiver)
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-test_github_client_id}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-test_github_client_secret}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
       - FORTYTWO_CLIENT_ID=${FORTYTWO_CLIENT_ID:-}
       - FORTYTWO_CLIENT_SECRET=${FORTYTWO_CLIENT_SECRET:-}
       # Configuration Eureka

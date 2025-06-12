@@ -5,6 +5,7 @@ import com.hypertube.auth.entity.User;
 import com.hypertube.auth.repository.UserRepository;
 import com.hypertube.auth.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -13,12 +14,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -73,8 +78,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         user.setEmailVerified(true); // OAuth emails are considered verified
         user.setRole(ERole.ROLE_USER);
         
-        // Pas de mot de passe pour OAuth2
-        user.setPassword("");
+        // Générer un mot de passe temporaire pour les utilisateurs OAuth2
+        // Ce mot de passe ne sera jamais utilisé mais permet de satisfaire la contrainte @NotBlank
+        String temporaryPassword = "OAUTH2_USER_" + UUID.randomUUID().toString();
+        user.setPassword(passwordEncoder.encode(temporaryPassword));
         
         return user;
     }

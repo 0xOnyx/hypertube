@@ -24,7 +24,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Autowired
     private UserSessionRepository sessionRepository;
 
-    @Value("${hypertube.frontend.url}")
+    @Value("${FRONTEND_URL}")
     private String frontendUrl;
 
     @Override

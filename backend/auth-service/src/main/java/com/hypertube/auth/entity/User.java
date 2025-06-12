@@ -98,4 +98,11 @@ public class User {
         this.emailVerified = false;
         this.sessions = new HashSet<>();
     }
+
+    /**
+     * Vérifie si cet utilisateur est un utilisateur OAuth2
+     */
+    public boolean isOAuth2User() {
+        return provider != null && !provider.trim().isEmpty();
+    }
 } 
