@@ -37,8 +37,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         }
 
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
-        String jwt = jwtUtils.generateJwtToken(userPrincipal.getUsername());
-        String refreshToken = jwtUtils.generateRefreshToken(userPrincipal.getUsername());
+        String jwt = jwtUtils.generateJwtToken(userPrincipal);
+        String refreshToken = jwtUtils.generateRefreshToken(userPrincipal);
 
         // Créer une session
         User user = User.builder()

@@ -6,8 +6,10 @@ import com.hypertube.auth.entity.UserSession;
 import com.hypertube.auth.exception.AuthException;
 import com.hypertube.auth.repository.UserSessionRepository;
 import com.hypertube.auth.security.JwtUtils;
+import com.hypertube.auth.security.UserDetailsImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +27,20 @@ public class TokenService {
     
     private final UserSessionRepository sessionRepository;
     private final JwtUtils jwtUtils;
+    private final UserDetailsService userDetailsService;
     
-    public TokenService(UserSessionRepository sessionRepository, JwtUtils jwtUtils) {
+    public TokenService(UserSessionRepository sessionRepository, JwtUtils jwtUtils, UserDetailsService userDetailsService) {
         this.sessionRepository = sessionRepository;
         this.jwtUtils = jwtUtils;
+        this.userDetailsService = userDetailsService;
     }
     
     /**
      * Crée une nouvelle session utilisateur avec refresh token
      */
     public UserSession createUserSession(User user) {
-        String refreshToken = jwtUtils.generateRefreshToken(user.getUsername());
+        UserDetailsImpl userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(user.getUsername());
+        String refreshToken = jwtUtils.generateRefreshToken(userDetails);
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(AuthConstants.REFRESH_TOKEN_EXPIRY_DAYS);
         
         UserSession session = new UserSession(user, refreshToken, expiresAt);
@@ -49,7 +54,8 @@ public class TokenService {
      * Génère un nouveau JWT pour l'utilisateur
      */
     public String generateAccessToken(String username) {
-        return jwtUtils.generateJwtToken(username);
+        UserDetailsImpl userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(username);
+        return jwtUtils.generateJwtToken(userDetails);
     }
     
     /**
@@ -70,7 +76,8 @@ public class TokenService {
             );
         }
         
-        String newAccessToken = jwtUtils.generateJwtToken(session.getUser().getUsername());
+        UserDetailsImpl userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(session.getUser().getUsername());
+        String newAccessToken = jwtUtils.generateJwtToken(userDetails);
         logger.debug("Renewed access token for user: {}", session.getUser().getUsername());
         
         return newAccessToken;

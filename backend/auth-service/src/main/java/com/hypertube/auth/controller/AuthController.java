@@ -2,6 +2,7 @@ package com.hypertube.auth.controller;
 
 import com.hypertube.auth.dto.*;
 import com.hypertube.auth.entity.User;
+import com.hypertube.auth.security.UserDetailsImpl;
 import com.hypertube.auth.service.AuthService;
 import com.hypertube.auth.service.TokenService;
 import jakarta.validation.Valid;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.stream.Collectors;
 
 /**
  * Contrôleur REST pour l'authentification - refactorisé pour une meilleure maintenabilité
@@ -87,16 +90,16 @@ public class AuthController {
     }
     
     @GetMapping("/me")
-    public ResponseEntity<MessageResponse> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<UserInfoDTO> getCurrentUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new MessageResponse("Error: Unauthorized"));
+            logger.warn("Unauthorized access attempt to /me endpoint");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         
-        String username = authentication.getName();
-        logger.debug("User info request for: {}", username);
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        logger.debug("User info request for: {}", userDetails.getUsername());
         
-        return ResponseEntity.ok(new MessageResponse("User info: " + username));
+        return ResponseEntity.ok(UserInfoDTO.fromUserDetails(userDetails));
     }
     
     @GetMapping("/validate")

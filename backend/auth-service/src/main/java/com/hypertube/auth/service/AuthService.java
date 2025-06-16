@@ -8,6 +8,7 @@ import com.hypertube.auth.entity.UserSession;
 import com.hypertube.auth.exception.AuthException;
 import com.hypertube.auth.repository.UserRepository;
 import com.hypertube.auth.security.UserDetailsImpl;
+import com.hypertube.auth.security.JwtUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service principal d'authentification refactorisé pour une meilleure maintenabilité
@@ -36,6 +38,7 @@ public class AuthService {
     private final EmailService emailService;
     private final TokenService tokenService;
     private final UserValidationService userValidationService;
+    private final JwtUtils jwtUtils;
     
     public AuthService(
             AuthenticationManager authenticationManager,
@@ -43,7 +46,8 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             EmailService emailService,
             TokenService tokenService,
-            UserValidationService userValidationService) {
+            UserValidationService userValidationService,
+            JwtUtils jwtUtils) {
         
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
@@ -51,6 +55,7 @@ public class AuthService {
         this.emailService = emailService;
         this.tokenService = tokenService;
         this.userValidationService = userValidationService;
+        this.jwtUtils = jwtUtils;
     }
     
     /**
@@ -68,25 +73,22 @@ public class AuthService {
         
         SecurityContextHolder.getContext().setAuthentication(authentication);
         
-        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
-        User user = userRepository.findById(userPrincipal.getId())
-                .orElseThrow(() -> new AuthException("User not found", AuthConstants.USER_NOT_FOUND));
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         
-        // Génération des tokens
-        String jwt = tokenService.generateAccessToken(userPrincipal.getUsername());
-        UserSession session = tokenService.createUserSession(user);
+        String jwt = jwtUtils.generateJwtToken(userDetails);
+        String refreshToken = jwtUtils.generateRefreshToken(userDetails);
         
-        List<String> roles = extractUserRoles(userPrincipal);
-        
-        logger.info("User {} authenticated successfully", userPrincipal.getUsername());
+        logger.info("User {} authenticated successfully", userDetails.getUsername());
         
         return new JwtResponse(
-            jwt, 
-            session.getToken(),
-            userPrincipal.getId(),
-            userPrincipal.getUsername(),
-            userPrincipal.getEmail(),
-            roles
+            jwt,
+            refreshToken,
+            userDetails.getId(),
+            userDetails.getUsername(),
+            userDetails.getEmail(),
+            userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toList())
         );
     }
     
@@ -248,12 +250,6 @@ public class AuthService {
         
         user.setLanguage(user.getLanguage() != null ? user.getLanguage() : "en");
         user.setRole(ERole.ROLE_USER);
-    }
-    
-    private List<String> extractUserRoles(UserDetailsImpl userPrincipal) {
-        return userPrincipal.getAuthorities().stream()
-                .map(authority -> authority.getAuthority())
-                .toList();
     }
     
     private UserDetailsImpl getCurrentUserDetails() {

@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtils {
@@ -28,17 +32,26 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateJwtToken(String username) {
-        return generateToken(username, jwtExpirationMs);
+    public String generateJwtToken(UserDetailsImpl userDetails) {
+        return generateToken(userDetails, jwtExpirationMs);
     }
 
-    public String generateRefreshToken(String username) {
-        return generateToken(username, jwtRefreshExpirationMs);
+    public String generateRefreshToken(UserDetailsImpl userDetails) {
+        return generateToken(userDetails, jwtRefreshExpirationMs);
     }
 
-    private String generateToken(String username, long expirationMs) {
+    private String generateToken(UserDetailsImpl userDetails, long expirationMs) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id", userDetails.getId());
+        claims.put("username", userDetails.getUsername());
+        claims.put("email", userDetails.getEmail());
+        claims.put("roles", userDetails.getAuthorities().stream()
+            .map(auth -> auth.getAuthority())
+            .collect(Collectors.joining(", ")));
+
         return Jwts.builder()
-                .setSubject(username)
+                .setClaims(claims)
+                .setSubject(String.valueOf(userDetails.getId()))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + expirationMs))
                 .signWith(getSigningKey())
@@ -51,7 +64,43 @@ public class JwtUtils {
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
-                .getSubject();
+                .get("username", String.class);
+    }
+
+    public Long getUserIdFromJwtToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("id", Long.class);
+    }
+
+    public String getEmailFromJwtToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("email", String.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<String> getRolesFromJwtToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        
+        List<?> rolesList = claims.get("roles", List.class);
+        if (rolesList == null) {
+            return List.of();
+        }
+        
+        return rolesList.stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
     }
 
     public boolean validateJwtToken(String authToken) {

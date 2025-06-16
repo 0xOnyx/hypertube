@@ -42,7 +42,8 @@ export class AuthService {
       .pipe(
         tap(response => {
           localStorage.setItem(this.tokenKey, response.token);
-          this.currentUserSubject.next(response.user);
+          // Récupérer les informations de l'utilisateur après la connexion
+          this.getCurrentUser().subscribe();
         })
       );
   }

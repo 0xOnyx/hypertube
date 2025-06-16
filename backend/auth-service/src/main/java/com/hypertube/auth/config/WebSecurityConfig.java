@@ -1,5 +1,6 @@
 package com.hypertube.auth.config;
 
+import com.hypertube.auth.security.GatewayAuthenticationFilter;
 import com.hypertube.auth.security.OAuth2AuthenticationSuccessHandler;
 import com.hypertube.auth.security.UserDetailsServiceImpl;
 import com.hypertube.auth.service.CustomOAuth2UserService;
@@ -17,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,6 +38,11 @@ public class WebSecurityConfig {
 
     @Autowired
     private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+
+    @Bean
+    public GatewayAuthenticationFilter gatewayAuthenticationFilter() {
+        return new GatewayAuthenticationFilter();
+    }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
@@ -75,6 +82,9 @@ public class WebSecurityConfig {
                 );
 
         http.authenticationProvider(authenticationProvider());
+        
+        // Ajouter le filtre de la gateway avant le filtre d'authentification par défaut
+        http.addFilterBefore(gatewayAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
