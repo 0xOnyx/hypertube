@@ -43,12 +43,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private User processOAuth2User(String registrationId, Map<String, Object> attributes, String userNameAttributeName) {
         OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(registrationId, attributes);
-        
+
+        Optional<User> userOptional;
+
         if (userInfo.getEmail() == null || userInfo.getEmail().isEmpty()) {
-            throw new OAuth2AuthenticationException("Email not found from OAuth2 provider");
+            userOptional = userRepository.findByUsername(userInfo.getName());
+        }
+        else {
+            userOptional = userRepository.findByEmail(userInfo.getEmail());
         }
 
-        Optional<User> userOptional = userRepository.findByEmail(userInfo.getEmail());
         User user;
         
         if (userOptional.isPresent()) {
@@ -71,7 +75,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         user.setProvider(registrationId);
         user.setProviderId(userInfo.getId());
         user.setUsername(userInfo.getName());
-        user.setEmail(userInfo.getEmail());
+        user.setEmail(userInfo.getEmail()== null ? userInfo.getName() + "@hypertube.com": userInfo.getEmail());
         user.setFirstName(userInfo.getFirstName());
         user.setLastName(userInfo.getLastName());
         user.setProfilePicture(userInfo.getImageUrl());

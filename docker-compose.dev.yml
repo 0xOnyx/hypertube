@@ -47,7 +47,7 @@ services:
     command: >
       sh -c "
         mvn clean compile &&
-        mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.devtools.restart.enabled=true -Dspring.devtools.livereload.enabled=true'
+        mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.devtools.restart.enabled=true -Dspring.devtools.livereload.enabled=true -Dspring.devtools.restart.poll-interval=1000 -Dspring.devtools.restart.quiet-period=400'
       "
     environment:
       - SPRING_PROFILES_ACTIVE=docker,dev
@@ -74,6 +74,7 @@ services:
       - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
       - SPRING_DEVTOOLS_RESTART_POLL_INTERVAL=1000
       - SPRING_DEVTOOLS_RESTART_QUIET_PERIOD=400
+      - SPRING_DEVTOOLS_RESTART_TRIGGER_FILE=.reloadtrigger
       # Configuration Email (optionnelle)
       - EMAIL_FROM=noreply@hypertube.com
       - MAIL_HOST=smtp.gmail.com

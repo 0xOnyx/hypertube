@@ -109,6 +109,10 @@ logging:
     com.hypertube.auth: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
+    org.springframework.security.oauth2: TRACE
+    org.springframework.security.oauth2.client: TRACE
+    org.springframework.security.oauth2.server: TRACE
+    org.springframework.security.oauth2.core: TRACE
     # Réduction du niveau de log pour les warnings LoadBalancer
     org.springframework.context.support.PostProcessorRegistrationDelegate: WARN
     org.springframework.cloud.loadbalancer: WARN
