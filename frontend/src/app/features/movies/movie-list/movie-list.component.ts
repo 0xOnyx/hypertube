@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 
 import { MovieService } from '../../../core/services/movie.service';
+import { NavigationService } from '../../../core/services/navigation.service';
 import { Movie } from '../../../core/models/movie.model';
 import {
   HeaderComponent,
@@ -76,6 +77,7 @@ import {
 export class MovieListComponent implements OnInit {
   private movieService = inject(MovieService);
   private router = inject(Router);
+  private navigationService = inject(NavigationService);
 
   movies: Movie[] = [];
   isLoading = false;
@@ -85,13 +87,7 @@ export class MovieListComponent implements OnInit {
   currentFilters: SearchFilters = {};
 
   // Navigation
-  navigationLinks = [
-    { label: 'Home', route: '/home' },
-    { label: 'Movies', route: '/movies' },
-    { label: 'Series', route: '/series' },
-    { label: 'My List', route: '/watchlist' }
-  ];
-
+  navigationLinks = this.navigationService.getNavigationLinks();
   userAvatar = 'https://via.placeholder.com/40';
 
   // Filter options

@@ -2,8 +2,8 @@ import { ApplicationConfig, provideZoneChangeDetection, ErrorHandler } from '@an
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { APP_ROUTES } from './app.routes';
 
-import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 
 // Gestionnaire d'erreurs personnalisé pour éviter les erreurs NG0200
@@ -23,7 +23,7 @@ class CustomErrorHandler implements ErrorHandler {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    provideRouter(APP_ROUTES),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
     { provide: ErrorHandler, useClass: CustomErrorHandler }

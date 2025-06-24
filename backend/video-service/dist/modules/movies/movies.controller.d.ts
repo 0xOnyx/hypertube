@@ -7,6 +7,7 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateWatchHistoryDto } from './dto/update-watch-history.dto';
 import { MovieSearchDto } from './dto/movie-search.dto';
+import { Request } from 'express';
 export declare class MoviesController {
     private readonly moviesService;
     constructor(moviesService: MoviesService);
@@ -25,6 +26,13 @@ export declare class MoviesController {
         totalPages: number;
     }>;
     getPopular(page?: number, limit?: number): Promise<{
+        data: Movie[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    getUserHistory(userId: string, pageStr: string, limitStr: string, request: Request): Promise<{
         data: Movie[];
         total: number;
         page: number;

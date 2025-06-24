@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
 
-export const routes: Routes = [
+export const APP_ROUTES: Routes = [
   {
     path: '',
-    redirectTo: '/home',
+    redirectTo: 'home',
     pathMatch: 'full'
   },
   {
@@ -19,7 +20,22 @@ export const routes: Routes = [
     loadChildren: () => import('./features/movies/movies.routes').then(m => m.MOVIES_ROUTES)
   },
   {
+    path: 'series',
+    loadChildren: () => import('./features/series/series.routes').then(m => m.SERIES_ROUTES),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'watchlist',
+    loadChildren: () => import('./features/watchlist/watchlist.routes').then(m => m.WATCHLIST_ROUTES),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'user',
+    loadChildren: () => import('./features/user/user.routes').then(m => m.USER_ROUTES),
+    canActivate: [authGuard]
+  },
+  {
     path: '**',
-    redirectTo: '/auth/login'
+    redirectTo: 'home'
   }
 ];

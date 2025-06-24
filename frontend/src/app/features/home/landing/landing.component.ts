@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { HeaderComponent } from '../../../shared/components/header.component';
 import { MovieCardComponent, MovieCardData } from '../../../shared/components/movie-card.component';
 import { MovieService } from '../../../core/services/movie.service';
+import { NavigationService } from '../../../core/services/navigation.service';
 import { Movie } from '../../../core/models/movie.model';
 
 interface FeaturedContent {
@@ -28,13 +29,15 @@ interface Category {
       <div class="layout-container flex h-full grow flex-col">
         <!-- Header -->
         <app-header
+          appName="Hypertube"
           [navigationLinks]="navigationLinks"
+          [userAvatar]="userAvatar"
           [showSearch]="true"
           [showBookmarks]="true"
-          [userAvatar]="userAvatar"
           (searchQueryChange)="onSearchChange($event)"
+          (searchSubmit)="onSearchSubmit($event)"
           (bookmarkClick)="onBookmarkClick()"
-          (userClick)="onLoginClick()"
+          (userClick)="onUserClick()"
         ></app-header>
 
         <!-- Main Content -->
@@ -157,16 +160,10 @@ interface Category {
 export class LandingComponent {
   private movieService = inject(MovieService);
   private router = inject(Router);
+  private navigationService = inject(NavigationService);
 
-  // Navigation configuration
-  navigationLinks = [
-    { label: 'Home', route: '/home' },
-    { label: 'Browse', route: '/movies' },
-    { label: 'My List', route: '/watchlist' },
-    { label: 'New & Noteworthy', route: '/movies?filter=new' }
-  ];
-
-  userAvatar = 'https://via.placeholder.com/40/382929/FFFFFF?text=?';
+  navigationLinks = this.navigationService.getNavigationLinks();
+  userAvatar = 'https://via.placeholder.com/40';
 
   // Hero carousel data
   featuredContent: FeaturedContent[] = [
@@ -355,9 +352,12 @@ export class LandingComponent {
   }
 
   onSearchChange(query: string): void {
-    if (query.trim()) {
-      this.router.navigate(['/movies'], { queryParams: { search: query } });
-    }
+    // TODO: Implement search suggestions
+    console.log('Search query:', query);
+  }
+
+  onSearchSubmit(query: string): void {
+    this.router.navigate(['/movies'], { queryParams: { search: query } });
   }
 
   onMovieClick(movie: MovieCardData): void {
@@ -365,27 +365,24 @@ export class LandingComponent {
   }
 
   onPlayMovie(movie: MovieCardData): void {
-    // For non-authenticated users, redirect to login
-    this.router.navigate(['/auth/login'], { 
-      queryParams: { redirect: `/movies/${movie.id}`, action: 'play' } 
-    });
+    this.router.navigate(['/movies', movie.id]);
   }
 
   onBookmarkMovie(movie: MovieCardData): void {
-    // For non-authenticated users, redirect to login
-    this.router.navigate(['/auth/login'], { 
-      queryParams: { redirect: `/movies/${movie.id}`, action: 'bookmark' } 
-    });
+    // TODO: Implement bookmark functionality
+    console.log('Bookmark movie:', movie.title);
+  }
+
+  onBookmarkClick(): void {
+    this.router.navigate(['/watchlist']);
+  }
+
+  onUserClick(): void {
+    this.router.navigate(['/user']);
   }
 
   onCategoryClick(category: Category): void {
     this.router.navigate(['/movies'], { queryParams: { genre: category.value } });
-  }
-
-  onBookmarkClick(): void {
-    this.router.navigate(['/auth/login'], { 
-      queryParams: { redirect: '/watchlist' } 
-    });
   }
 
   onLoginClick(): void {

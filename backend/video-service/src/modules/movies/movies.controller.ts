@@ -9,6 +9,9 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  Headers,
+  BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { MoviesService } from './movies.service';
@@ -20,6 +23,7 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateWatchHistoryDto } from './dto/update-watch-history.dto';
 import { MovieSearchDto } from './dto/movie-search.dto';
+import { Request } from 'express';
 
 @ApiTags('movies')
 @Controller('movies')
@@ -45,6 +49,40 @@ export class MoviesController {
   @ApiResponse({ status: 200, description: 'Popular movies', type: [Movie] })
   async getPopular(@Query('page') page = 1, @Query('limit') limit = 20) {
     return this.moviesService.getPopular(page, limit);
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Get user watch history' })
+  @ApiResponse({ status: 200, description: 'Watch history', type: [Movie] })
+  @ApiBearerAuth()
+  async getUserHistory(
+    @Headers('X-User-Id') userId: string,
+    @Query('page') pageStr = '1',
+    @Query('limit') limitStr = '20',
+  ) {
+    // Validate and convert userId
+    const userIdNum = parseInt(userId);
+    if (isNaN(userIdNum)) {
+      throw new BadRequestException({
+        message: 'Invalid user-id header: must be a number',
+        error: 'Bad Request',
+        statusCode: 400,
+      });
+    }
+
+    // Validate and convert page
+    const page = parseInt(pageStr);
+    if (isNaN(page) || page < 1) {
+      throw new BadRequestException('Invalid page parameter: must be a positive number');
+    }
+
+    // Validate and convert limit
+    const limit = parseInt(limitStr);
+    if (isNaN(limit) || limit < 1) {
+      throw new BadRequestException('Invalid limit parameter: must be a positive number');
+    }
+
+    return this.moviesService.getUserHistory(userIdNum, page, limit);
   }
 
   @Get(':id')

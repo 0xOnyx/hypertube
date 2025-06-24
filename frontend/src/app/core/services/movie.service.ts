@@ -1,21 +1,63 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Movie, MovieDetails, MovieSearchResponse, Comment } from '../models/movie.model';
+import { environment } from '../../../environments/environment';
+import { Movie, MovieDetails, MovieSearchResponse, Comment, WatchHistory } from '../models/movie.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MovieService {
   private http = inject(HttpClient);
-  private apiUrl = '/api';
+  private apiUrl = environment.apiUrl;
 
-  searchMovies(query: string, page = 1): Observable<MovieSearchResponse> {
+  getMovies(page: number = 1, limit: number = 20): Observable<MovieSearchResponse> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<MovieSearchResponse>(`${this.apiUrl}/movies`, { params });
+  }
+
+  getMovie(id: number): Observable<Movie> {
+    return this.http.get<Movie>(`${this.apiUrl}/movies/${id}`);
+  }
+
+  searchMovies(query: string, page: number = 1, limit: number = 20): Observable<MovieSearchResponse> {
     const params = new HttpParams()
       .set('query', query)
-      .set('page', page.toString());
-    
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
     return this.http.get<MovieSearchResponse>(`${this.apiUrl}/movies/search`, { params });
+  }
+
+  getWatchHistory(page: number = 1, limit: number = 20): Observable<MovieSearchResponse> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<MovieSearchResponse>(`${this.apiUrl}/movies/history`, { params });
+  }
+
+  updateWatchHistory(movieId: number, data: Partial<WatchHistory>): Observable<WatchHistory> {
+    return this.http.put<WatchHistory>(`${this.apiUrl}/movies/${movieId}/history`, data);
+  }
+
+  getWatchlist(page: number = 1, limit: number = 20): Observable<MovieSearchResponse> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<MovieSearchResponse>(`${this.apiUrl}/movies/watchlist`, { params });
+  }
+
+  addToWatchlist(movieId: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/movies/${movieId}/watchlist`, {});
+  }
+
+  removeFromWatchlist(movieId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/movies/${movieId}/watchlist`);
   }
 
   getMovieDetails(id: number): Observable<MovieDetails> {

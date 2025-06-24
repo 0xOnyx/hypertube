@@ -1,71 +1,54 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { LoginRequest, LoginResponse, RegisterRequest, User } from '../models/user.model';
+import { environment } from '../../../environments/environment';
+import { LoginRequest, LoginResponse, RegisterRequest, User, UserProfile } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = '/api';
-
+  private apiUrl = environment.apiUrl;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable();
-
-  private tokenKey = 'hypertube_token';
+  currentUser$ = this.currentUserSubject.asObservable();
 
   constructor() {
-    this.initializeFromStorage();
+    this.loadStoredUser();
   }
 
-  private initializeFromStorage(): void {
-    const token = localStorage.getItem(this.tokenKey);
+  private loadStoredUser(): void {
+    const token = this.getToken();
     if (token) {
-      // Décoder le JWT pour obtenir les informations utilisateur
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.exp * 1000 > Date.now()) {
-          // Token valide, récupérer les infos utilisateur
-          this.getCurrentUser().subscribe();
-        } else {
-          this.logout();
-        }
-      } catch (error) {
-        this.logout();
-      }
+      this.getCurrentUser().subscribe();
     }
   }
 
+  getCurrentUser(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/auth/me`).pipe(
+      tap(user => {
+        this.currentUserSubject.next(user);
+      })
+    );
+  }
+
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/signin`, credentials)
-      .pipe(
-        tap(response => {
-          localStorage.setItem(this.tokenKey, response.token);
-          // Récupérer les informations de l'utilisateur après la connexion
-          this.getCurrentUser().subscribe();
-        })
-      );
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
+      tap(response => {
+        localStorage.setItem('hypertube_token', response.token);
+        this.currentUserSubject.next(response.user);
+      })
+    );
   }
 
   register(userData: RegisterRequest): Observable<User> {
-    return this.http.post<User>(`${this.apiUrl}/auth/signup`, userData);
+    return this.http.post<User>(`${this.apiUrl}/auth/register`, userData);
   }
 
   logout(): void {
-    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem('hypertube_token');
+    localStorage.removeItem('hypertube_refresh_token');
     this.currentUserSubject.next(null);
-  }
-
-  getCurrentUser(): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/auth/me`)
-      .pipe(
-        tap(user => this.currentUserSubject.next(user))
-      );
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
   }
 
   isAuthenticated(): boolean {
@@ -80,7 +63,26 @@ export class AuthService {
     }
   }
 
-  get currentUser(): User | null {
-    return this.currentUserSubject.value;
+  getToken(): string | null {
+    return localStorage.getItem('hypertube_token');
+  }
+
+  updateProfile(profile: UserProfile): Observable<User> {
+    return this.http.put<User>(`${this.apiUrl}/auth/profile`, profile).pipe(
+      tap(user => {
+        this.currentUserSubject.next(user);
+      })
+    );
+  }
+
+  updateProfilePicture(file: File): Observable<User> {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    return this.http.put<User>(`${this.apiUrl}/auth/profile/picture`, formData).pipe(
+      tap(user => {
+        this.currentUserSubject.next(user);
+      })
+    );
   }
 }

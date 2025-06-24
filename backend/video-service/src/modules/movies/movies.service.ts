@@ -200,4 +200,26 @@ export class MoviesService {
     
     return { url: streamingUrl };
   }
+
+  async getUserHistory(userId: number, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.movieRepository
+      .createQueryBuilder('movie')
+      .innerJoinAndSelect('movie.watchHistory', 'history', 'history.userId = :userId', { userId })
+      .leftJoinAndSelect('movie.torrents', 'torrents')
+      .orderBy('history.updatedAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    const [movies, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: movies,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 } 

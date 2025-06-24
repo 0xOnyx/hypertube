@@ -37,6 +37,27 @@ let MoviesController = class MoviesController {
     async getPopular(page = 1, limit = 20) {
         return this.moviesService.getPopular(page, limit);
     }
+    async getUserHistory(userId, pageStr = '1', limitStr = '20', request) {
+        const userIdNum = parseInt(userId);
+        if (isNaN(userIdNum)) {
+            const headers = request.headers;
+            throw new common_1.BadRequestException({
+                message: 'Invalid user-id header: must be a number',
+                error: 'Bad Request',
+                statusCode: 400,
+                requestHeaders: headers
+            });
+        }
+        const page = parseInt(pageStr);
+        if (isNaN(page) || page < 1) {
+            throw new common_1.BadRequestException('Invalid page parameter: must be a positive number');
+        }
+        const limit = parseInt(limitStr);
+        if (isNaN(limit) || limit < 1) {
+            throw new common_1.BadRequestException('Invalid limit parameter: must be a positive number');
+        }
+        return this.moviesService.getUserHistory(userIdNum, page, limit);
+    }
     async findOne(id) {
         return this.moviesService.findOne(id);
     }
@@ -94,6 +115,19 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], MoviesController.prototype, "getPopular", null);
+__decorate([
+    (0, common_1.Get)('history'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get user watch history' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Watch history', type: [movie_entity_1.Movie] }),
+    (0, swagger_1.ApiBearerAuth)(),
+    __param(0, (0, common_1.Headers)('X-User-Id')),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('limit')),
+    __param(3, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], MoviesController.prototype, "getUserHistory", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Get movie by ID' }),

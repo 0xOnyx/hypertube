@@ -6,6 +6,7 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 import { MovieService } from '../../../core/services/movie.service';
+import { NavigationService } from '../../../core/services/navigation.service';
 import { Movie } from '../../../core/models/movie.model';
 import {
   HeaderComponent,
@@ -87,6 +88,7 @@ import {
 export class MovieSearchComponent {
   private movieService = inject(MovieService);
   private router = inject(Router);
+  private navigationService = inject(NavigationService);
 
   searchControl = new FormControl('');
   searchResults: Movie[] = [];
@@ -97,13 +99,7 @@ export class MovieSearchComponent {
   currentFilters: SearchFilters = {};
 
   // Navigation
-  navigationLinks = [
-    { label: 'Home', route: '/home' },
-    { label: 'Movies', route: '/movies' },
-    { label: 'Series', route: '/series' },
-    { label: 'My List', route: '/watchlist' }
-  ];
-
+  navigationLinks = this.navigationService.getNavigationLinks();
   userAvatar = 'https://via.placeholder.com/40';
 
   // Filter options
@@ -140,8 +136,7 @@ export class MovieSearchComponent {
         { value: '9+', label: '9.0+' },
         { value: '8+', label: '8.0+' },
         { value: '7+', label: '7.0+' },
-        { value: '6+', label: '6.0+' },
-        { value: '5+', label: '5.0+' }
+        { value: '6+', label: '6.0+' }
       ]
     },
     {
@@ -152,15 +147,13 @@ export class MovieSearchComponent {
         { value: 'fr', label: 'French' },
         { value: 'es', label: 'Spanish' },
         { value: 'de', label: 'German' },
-        { value: 'it', label: 'Italian' },
-        { value: 'ja', label: 'Japanese' },
-        { value: 'ko', label: 'Korean' }
+        { value: 'it', label: 'Italian' }
       ]
     }
   ];
 
   get movieCards(): MovieCardData[] {
-    return this.searchResults.map(movie => ({
+    return this.searchResults?.map(movie => ({
       id: movie.id,
       title: movie.title,
       subtitle: `${movie.year || 'N/A'} • ⭐ ${movie.rating || movie.imdbRating || 'N/A'}/10`,
@@ -169,133 +162,37 @@ export class MovieSearchComponent {
       rating: movie.rating || movie.imdbRating,
       genres: movie.genres || [],
       isBookmarked: false // TODO: implement bookmark logic
-    }));
+    })) || [];
   }
 
-  constructor() {
-    // Set up reactive search
-    this.searchControl.valueChanges.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-      switchMap(query => {
-        if (query && query.trim().length > 2) {
-          this.isLoading = true;
-          this.hasSearched = true;
-          this.currentQuery = query.trim();
-          return this.movieService.searchMovies(query.trim());
-        } else {
-          this.searchResults = [];
-          this.hasSearched = false;
-          this.isLoading = false;
-          return of(null);
-        }
-      })
-    ).subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        if (response) {
-          this.searchResults = response.data;
-          this.totalResults = response.total;
-        }
-      },
-      error: (error) => {
-        console.error('Erreur lors de la recherche:', error);
-        this.isLoading = false;
-        this.searchResults = [];
-      }
-    });
+  getResultsTitle(): string {
+    if (this.totalResults === 0) {
+      return 'No Results';
+    }
+    return `Search Results (${this.totalResults})`;
   }
 
   // Search and filter handlers
   onSearchChange(query: string): void {
-    this.searchControl.setValue(query, { emitEvent: true });
+    this.currentQuery = query;
+    this.performSearch();
   }
 
   onFiltersChange(filters: SearchFilters): void {
     this.currentFilters = filters;
-    this.performSearchWithFilters();
+    this.performSearch();
   }
 
-  private performSearchWithFilters(): void {
-    if (this.currentQuery) {
-      this.isLoading = true;
-      // TODO: Implement search with filters
-      console.log('Search with filters:', this.currentQuery, this.currentFilters);
+  private performSearch(): void {
+    this.hasSearched = true;
+    this.isLoading = true;
 
-      this.movieService.searchMovies(this.currentQuery).subscribe({
-        next: (response) => {
-          this.searchResults = this.applyClientSideFilters(response.data);
-          this.totalResults = this.searchResults.length;
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Erreur lors de la recherche avec filtres:', error);
-          this.isLoading = false;
-        }
-      });
-    }
-  }
-
-  private applyClientSideFilters(movies: Movie[]): Movie[] {
-    let filtered = [...movies];
-
-    // Apply genre filter
-    if (this.currentFilters.genre) {
-      filtered = filtered.filter(movie =>
-        movie.genres?.some(genre => genre.toLowerCase().includes(this.currentFilters.genre!.toLowerCase()))
-      );
-    }
-
-    // Apply year filter
-    if (this.currentFilters.releaseYear) {
-      const yearFilter = this.currentFilters.releaseYear;
-      if (yearFilter.includes('s')) {
-        // Decade filter (e.g., "2010s")
-        const decade = parseInt(yearFilter.replace('s', ''));
-        filtered = filtered.filter(movie =>
-          movie.year && movie.year >= decade && movie.year < decade + 10
-        );
-      } else {
-        // Specific year
-        const year = parseInt(yearFilter);
-        filtered = filtered.filter(movie => movie.year === year);
-      }
-    }
-
-    // Apply rating filter
-    if (this.currentFilters.rating) {
-      const ratingThreshold = parseFloat(this.currentFilters.rating.replace('+', ''));
-      filtered = filtered.filter(movie => {
-        const movieRating = this.getNumericRating(movie.rating || movie.imdbRating);
-        return movieRating >= ratingThreshold;
-      });
-    }
-
-    return filtered;
-  }
-
-  private getNumericRating(rating: string | number | undefined): number {
-    if (typeof rating === 'number') {
-      return rating;
-    }
-    if (typeof rating === 'string') {
-      const parsed = parseFloat(rating);
-      return isNaN(parsed) ? 0 : parsed;
-    }
-    return 0;
-  }
-
-  getResultsTitle(): string {
-    if (this.isLoading) {
-      return 'Searching...';
-    }
-
-    if (this.searchResults.length === 0) {
-      return `No results for "${this.currentQuery}"`;
-    }
-
-    const filtersApplied = Object.keys(this.currentFilters).length > 0;
-    return `${this.totalResults} result${this.totalResults !== 1 ? 's' : ''} for "${this.currentQuery}"${filtersApplied ? ' (filtered)' : ''}`;
+    // TODO: Implement actual search
+    setTimeout(() => {
+      this.searchResults = [];
+      this.totalResults = 0;
+      this.isLoading = false;
+    }, 1000);
   }
 
   // Action handlers
@@ -304,8 +201,6 @@ export class MovieSearchComponent {
   }
 
   onPlayMovie(movie: MovieCardData): void {
-    // TODO: Implement direct play functionality
-    console.log('Play movie:', movie.title);
     this.router.navigate(['/movies', movie.id]);
   }
 
@@ -320,6 +215,6 @@ export class MovieSearchComponent {
   }
 
   onUserClick(): void {
-    this.router.navigate(['/profile']);
+    this.router.navigate(['/user']);
   }
 }

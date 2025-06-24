@@ -44,4 +44,11 @@ export declare class MoviesService {
     getStreamingUrl(movieId: number): Promise<{
         url: string;
     }>;
+    getUserHistory(userId: number, page?: number, limit?: number): Promise<{
+        data: Movie[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
 }
